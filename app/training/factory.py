@@ -14,7 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
 
-ImputerDict: Dict[Imputation, Callable[None, IImputer]] = {
+ImputerDict: Dict[Imputation, Callable[[], IImputer]] = {
     Imputation.MEAN_IMPUTATION: lambda: SimpleImputer(missing_values=np.nan, strategy="mean"),
     Imputation.ZERO_INTERPOLATION: lambda: InterpolationImputer(missing_values=np.nan, strategy="zero"),
     Imputation.LINEAR_INTERPOLATION: lambda: InterpolationImputer(missing_values=np.nan, strategy="linear"),
@@ -30,7 +30,7 @@ def getImputer(imputation: Imputation) -> IImputer:
     return ImputerDict[imputation]()
 
 
-NormalizerDict: Dict[Normalization, Callable[None, INormalizer]] = {
+NormalizerDict: Dict[Normalization, Callable[[], INormalizer]] = {
     Normalization.MIN_MAX_SCALER: lambda: MinMaxScaler(),
     Normalization.NORMALIZER: lambda: Normalizer(),
     Normalization.QUANTILE_TRANSFORMER: lambda: QuantileTransformer(),
@@ -43,7 +43,7 @@ def getNormalizer(normalization: Normalization) -> INormalizer:
     return NormalizerDict[normalization]()
 
 
-ClassifierDict: Dict[Classifier, Callable[None, IClassifier]] = {
+ClassifierDict: Dict[Classifier, Callable[[], IClassifier]] = {
     Classifier.MLP_CLASSIFIER: lambda: MLPClassifier(),
     Classifier.SV_CLASSIFIER: lambda: SVC(),
     Classifier.RANDOM_FOREST_CLASSIFIER: lambda: RandomForestClassifier(),
