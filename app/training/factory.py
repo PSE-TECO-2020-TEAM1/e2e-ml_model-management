@@ -50,5 +50,6 @@ ClassifierDict: Dict[Classifier, Callable[[], IClassifier]] = {
     Classifier.KNEIGHBORS_CLASSIFIER: lambda: KNeighborsClassifier()
 }
 
+#TODO hyperparameters here ??
 def getClassifier(classifier: Classifier) -> IClassifier:
     return ClassifierDict[classifier]()
