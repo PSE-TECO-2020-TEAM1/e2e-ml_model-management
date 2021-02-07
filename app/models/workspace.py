@@ -7,18 +7,28 @@ class Sensor(MongoModel):
     name: str
     samplingRate: int
 
+class Timeframe(MongoModel):
+    start: int
+    end: int
+
+class DataPoint(MongoModel):
+    values: List[int]
+    timestamp: int
+
 class Sample(MongoModel):
     label: str
-    #TODO left here
-    allSensorDataPoints: List[]
+    timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
+    sensorDataPoints: Dict[str, DataPoint]
 
 class WorkspaceData(MongoModel):
     lastModified: int = Field(..., description = "Unix Timestamp")
-    data: List[Sample]
+    samples: List[Sample]
+    slidingWindows: List[OID] = Field([], description="References to data split to windows")
 
 class Workspace(MongoModel):
     _id: Optional[OID] = None
-    userId: int
+    userId: OID
     predictionIds: Dict[str, OID] = Field({}, description="predictionId: modelId")
     sensors: List[Sensor]
-    ml_models: List[OID] = Field([], description="references to the machine learning models of the workspace")
+    workspaceData: WorkspaceData = Field(None, description="Data samples of the workspace (must be fetched if None)")
+    ml_models: List[OID] = Field([], description="References to the machine learning models of the workspace")
