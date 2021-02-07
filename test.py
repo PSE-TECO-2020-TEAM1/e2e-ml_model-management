@@ -7,6 +7,8 @@ from pydantic.fields import Field
 from pydantic.main import BaseConfig
 from app.models.workspace import Workspace
 from enum import Enum
+from pickle import dumps
+from bson import Binary
 
 #TODO delete once understood xd
 
@@ -14,46 +16,22 @@ client = AsyncIOMotorClient("localhost", 27017)
 db = client.get_database("mydatabase")
 collection = db.get_collection("mycollection")
 
-class OID(str):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        try:
-            return ObjectId(str(v))
-        except InvalidId:
-            raise ValueError("Not a valid ObjectId")
-
-class FruitEnum(str, Enum):
-    pear = 'pear'
-    banana = 'banana'
-
-class CookingModel(BaseModel):
-    fruit: FruitEnum
-
-
-class MongoModel(BaseModel):
-    class Config(BaseConfig):
-        json_encoders = {
-            ObjectId: lambda oid: str(oid),
-        }
-
-class User(MongoModel):
-    _id: Optional[OID] = None
-
-
 async def do_insert(a):
     result = await collection.insert_one(a)
     print('result %s' % repr(result.inserted_id))
 
 async def do_find():
-    result: User = await collection.find_one({"_id": ObjectId('601f10a6e6341e9be0496e69')})
-    print(type(result))
+    result = await collection.find_one({"_id": ObjectId('601f10a6e6341e9be0496e69')})
     print(result["_id"])
 
+from enum import Enum
+
+class Classifier(dict, Enum):
+    MLP_CLASSIFIER = {"a": 1}
+
+class Del(BaseModel):
+    a: Classifier
 
 import asyncio
 loop = asyncio.get_event_loop()
-loop.run_until_complete(do_find())
+loop.run_until_complete(do_insert(Del(a=Classifier.MLP_CLASSIFIER).dict()))
