@@ -1,25 +1,25 @@
 from typing import Optional
- 
+from pydantic import BaseModel 
 
-class Hyperparameter():
+class Hyperparameters():
     name: str
     format: str
 
 class Classifiers():
     name: str
-    Hyperparameters : list[Hyperparameter]
+    Hyperparameters : list[Hyperparameters]
 
-class GetParameterRes():
+class GetParameterRes(BaseModel):
     imputation: list[str]
     features: list[str]
     normalizers: list[str]
     classifiers: Classifiers
 
-class GetModelsRes():
+class GetModelsRes(BaseModel):
     modelID: str
     name: str
 
-class TrainingProgress():
+class TrainingProgress(BaseModel):
     Progress: int
 
 class PerformanceMetrics():
@@ -36,29 +36,29 @@ class Parameters():
     normalizer: str
     classifier: Classifiers
 
-class ModelRes():
+class ModelRes(BaseModel):
     labelPerformanceMetrics: list[LabelPerformanceMetrics]
     parameters: Parameters
 
-class PredictionIDRes():
+class PredictionIDRes(BaseModel):
     predictionID: str
 
 class PredictionConfig():
     name: list[str]
     samplingRate: int
 
-class PredictionConfigRes():
+class PredictionConfigRes(BaseModel):
     predictionConfig: PredictionConfig
 
-class DataPoints:
+class DataPoints():
     timeStamp: int
     data: list[int]
 
-class SensorDataPoint:
+class SensorDataPoint():
     sensor: str
     dataPoints: list[DataPoints]
 
-class submitDataWindowRes():
+class submitDataWindowRes(BaseModel):
     start: int
     end: int
     sensortDataPionts: list[SensorDataPoint] 
