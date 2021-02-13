@@ -19,8 +19,8 @@ class GetModelsRes(BaseModel):
     modelID: str
     name: str
 
-class TrainingProgress(BaseModel):
-    Progress: int
+class TrainingProgressRes(BaseModel):
+    progress: float
 
 class PerformanceMetrics():
     name: str
@@ -40,7 +40,7 @@ class ModelRes(BaseModel):
     labelPerformanceMetrics: list[LabelPerformanceMetrics]
     parameters: Parameters
 
-class PredictionIDRes(BaseModel):
+class GetPredictionIdRes(BaseModel):
     predictionID: str
 
 class PredictionConfig():
