@@ -51,5 +51,5 @@ ClassifierDict: Dict[Classifier, Callable[[], IClassifier]] = {
 }
 
 #TODO hyperparameters here ??
-def getClassifier(classifier: Classifier) -> IClassifier:
+def getClassifier(classifier: Classifier, hyperparameters: ConfigurationSpace) -> IClassifier:
     return ClassifierDict[classifier]()
