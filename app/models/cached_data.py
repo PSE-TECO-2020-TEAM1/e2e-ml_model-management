@@ -14,6 +14,7 @@ from app.models.mongo_model import OID, MongoModel
 class SlidingWindow(MongoModel):
     _id: Optional[OID] = None
     data_windows: List[Binary] = Field(..., description="DataFrame[]")
+    labels_of_data_windows: List[int]
     extracted_features: Dict[Feature, OID] = Field([], description="Features extracted with this imputed data")
 
 class ExtractedFeature(MongoModel):

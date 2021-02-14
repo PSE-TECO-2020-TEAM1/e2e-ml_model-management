@@ -26,7 +26,7 @@ class WorkspaceData(MongoModel):
     label_dict: Dict[str, int] = Field(..., description="label -> identifier_number")
     samples: List[Sample]
     # imputedSamples: Dict[Imputation, OID] = Field([], description="References to imputed samples per imputation method")
-    sliding_windows: Dict[Tuple[int, int], OID] = Field([], description="(window size, sliding step) -> References to sliding windows")
+    sliding_windows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
 
 class Workspace(MongoModel):
     _id: Optional[OID] = None
