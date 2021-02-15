@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List
-from pandas import DataFrame
+
 from numpy import ndarray
+from pandas import DataFrame
+
 
 class IImputer(ABC):
 
@@ -32,5 +34,5 @@ class IClassifier(ABC):
         pass
 
     @abstractmethod
-    def predict(self, df: DataFrame) -> ndarray:
+    def predict(self, df: DataFrame, y: DataFrame) -> ndarray:
         pass

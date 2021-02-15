@@ -1,7 +1,8 @@
+from bson import ObjectId
 from bson.errors import InvalidId
 from pydantic import BaseModel
 from pydantic.main import BaseConfig
-from bson import ObjectId
+
 
 class OID(str):
     @classmethod

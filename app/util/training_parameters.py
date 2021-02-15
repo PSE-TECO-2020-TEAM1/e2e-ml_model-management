@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Dict
 
 
 class Imputation(str, Enum):
@@ -12,14 +11,14 @@ class Imputation(str, Enum):
     LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION = "LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION"
 
 
-class Normalizer(str, Enum):
+class Normalization(str, Enum):
     MIN_MAX_SCALER = "MIN_MAX_SCALER"
     NORMALIZER = "NORMALIZER"
     QUANTILE_TRANSFORMER = "QUANTILE_TRANSFORMER"
     ROBUST_SCALER = "ROBUST_SCALER"
     STANDARD_SCALER = "STANDARD_SCALER"
 
-#TODO FEATUREs by the tsfresh names
+# TODO write FEATUREs by the tsfresh names
 class Feature(str, Enum):
     MINIMUM = "minimum"
     MAXIMUM = "maximum"

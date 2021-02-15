@@ -1,23 +1,23 @@
-from app.training.factory import get_normalizer, get_classifier, get_imputer
-from app.util.ml_objects import IClassifier, INormalizer
-from app.models.cached_data import ExtractedFeature, SlidingWindow
+import pickle
 from typing import Dict, List, Tuple, Union
-from ConfigSpace import Configuration
+
+import tsfresh
+from app.models.cached_data import ExtractedFeature, SlidingWindow
+from app.models.mongo_model import OID
+from app.models.workspace import DataPoint, Sample, Workspace
+from app.training.factory import get_classifier, get_imputer, get_normalizer
+from app.util.ml_objects import IClassifier, INormalizer
+from app.util.training_parameters import (Classifier, Feature, Imputation,
+                                          Normalization)
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pandas import DataFrame, concat
 from tsfresh.feature_extraction import ComprehensiveFCParameters
-import tsfresh
-import pickle
-
-from app.util.training_parameters import Classifier, Feature, Imputation, Normalizer
-from app.models.mongo_model import OID
-from app.models.workspace import DataPoint, Sample, Workspace
 
 
 class Trainer():
 
-    def __init__(self, db: AsyncIOMotorDatabase, workspace_id: OID, model_name: str, window_size: int, sliding_step: int, features: List[Feature], imputation: Imputation, 
-                 normalizer: Normalizer, classifier: Classifier, hyperparameters: Configuration):
+    def __init__(self, db: AsyncIOMotorDatabase, workspace_id: OID, model_name: str, window_size: int, sliding_step: int, features: List[Feature], imputation: Imputation,
+                 normalizer: Normalization, classifier: Classifier, hyperparameters: Dict[str, Union[str, float, int, bool]]):
         # TODO wrapper for config?
         self.db = db
         self.progress = 0  # percentage
@@ -34,26 +34,21 @@ class Trainer():
     async def train(self):
         # data split to windows
         pipeline_data = await self.__get_data_split_to_windows()
+        labels_of_data_windows = pipeline_data.labels_of_data_windows
 
         # extract features
         pipeline_data = await self.__get_extracted_features(pipeline_data)
 
         # normalize
-        normalizeTuple: Tuple[DataFrame,
-                              INormalizer] = self.__normalize(pipeline_data)
-        normalized_data: DataFrame = normalizeTuple[0]
-        normalizer_object: INormalizer = normalizeTuple[1]
-        print(normalized_data)
+        (pipeline_data, normalizer_object) = self.__normalize(pipeline_data)
 
-        # # train
-        # classifier_object: IClassifier = self.__train(normalizedData)
-
-        # # save ml_model
+        # train
+        classifier_object: IClassifier = self.__train(pipeline_data, labels_of_data_windows)
+        # save ml_model
 
     async def __get_data_split_to_windows(self) -> SlidingWindow:
         workspace_document = await self.db.workspaces.find_one({"_id": self.workspace_id})
-        workspace = Workspace(**workspace_document,
-                              id=workspace_document["_id"])
+        workspace = Workspace(**workspace_document, id=workspace_document["_id"])
         workspace_data = workspace.workspace_data
         # If already cached, retrieve from the database
         if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.sliding_windows:
@@ -96,7 +91,7 @@ class Trainer():
                 data_windows.append(DataFrame(data_window))
                 labels_of_data_windows.append(label_dict[sample.label])
 
-        #TODO label 0 for the windows not in timeframes
+        # TODO label 0 for the windows not in timeframes
         return (data_windows, labels_of_data_windows)
 
     async def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
@@ -156,8 +151,10 @@ class Trainer():
     def __normalize(self, data: DataFrame) -> Tuple[DataFrame, INormalizer]:
         normalizer_object: INormalizer = get_normalizer(self.normalizer)
         normalizer_object.fit(data)
-        normalized_data = DataFrame(normalizer_object.transform(data), columns=data.columnns)
+        normalized_data = DataFrame(normalizer_object.transform(data), columns=data.columns)
         return (normalized_data, normalizer_object)
 
-    def __train(self, data: DataFrame) -> IClassifier:
-        pass
+    def __train(self, data: DataFrame, labels_of_data_windows: List[int]) -> IClassifier:
+        classifier_object = get_classifier(self.classifier, self.hyperparameters)
+        classifier_object.fit(data, labels_of_data_windows)
+        return classifier_object

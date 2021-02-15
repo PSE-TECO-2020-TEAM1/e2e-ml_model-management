@@ -1,6 +1,9 @@
-from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparameter, UnParametrizedHyperparameter
 from ConfigSpace.conditions import EqualsCondition, InCondition
+from ConfigSpace.configuration_space import ConfigurationSpace
+from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
+                                         UniformFloatHyperparameter,
+                                         UniformIntegerHyperparameter,
+                                         UnParametrizedHyperparameter)
 
 cs: ConfigurationSpace = ConfigurationSpace()
 
@@ -28,8 +31,8 @@ degree_depends_on_poly = EqualsCondition(degree, kernel, "poly")
 
 coef0_condition = InCondition(coef0, kernel, ["poly", "sigmoid"])
 
-cs.add_condition(degree_depends_on_poly)
-cs.add_condition(coef0_condition)
-
 cs.add_hyperparameters([C, kernel, degree, gamma, coef0, shrinking,
                         tol, max_iter])
+
+cs.add_condition(degree_depends_on_poly)
+cs.add_condition(coef0_condition)

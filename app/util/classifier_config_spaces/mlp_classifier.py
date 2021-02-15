@@ -1,6 +1,9 @@
-from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparameter, UnParametrizedHyperparameter, Constant
 from ConfigSpace.conditions import InCondition
+from ConfigSpace.configuration_space import ConfigurationSpace
+from ConfigSpace.hyperparameters import (CategoricalHyperparameter, Constant,
+                                         UniformFloatHyperparameter,
+                                         UniformIntegerHyperparameter,
+                                         UnParametrizedHyperparameter)
 
 cs = ConfigurationSpace()
 hidden_layer_depth = UniformIntegerHyperparameter(name="hidden_layer_depth",

@@ -1,5 +1,8 @@
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparameter, UnParametrizedHyperparameter
+from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
+                                         UniformFloatHyperparameter,
+                                         UniformIntegerHyperparameter,
+                                         UnParametrizedHyperparameter)
 
 cs: ConfigurationSpace = ConfigurationSpace()
 

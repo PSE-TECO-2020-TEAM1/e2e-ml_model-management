@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class PerformanceMetric(str, Enum):
-    #TODO add metrics
+    # TODO add metrics
     pass

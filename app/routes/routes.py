@@ -1,22 +1,24 @@
-from fastapi import APIRouter 
-from pydantic import BaseModel
-
 import app.models.requests as requests
 import app.models.responses as responses
+from fastapi import APIRouter
+from pydantic import BaseModel
 
 router = APIRouter()
 
-@router.get("/parameters", response_model = responses.GetParameterRes)
+
+@router.get("/parameters", response_model=responses.GetParameterRes)
 async def parameters():
-    #TODO
+    # TODO
     pass
 
-@router.get("/predictionConfig", response_model = responses.PredictionConfigRes)
-async def getModel(predictionConfigreq: GetPredictionConfig):
-    #TODO
+
+@router.get("/predictionConfig", response_model=responses.PredictionConfigRes)
+async def getModel(predictionConfigreq: requests.GetPredictionConfig):
+    # TODO
     pass
 
-@router.post("/submitDataWindow", response_model = responses.submitDataWindowRes)
-async def getModel(datawindow: SubmitDataWindow):
-    #TODO
+
+@router.post("/submitDataWindow", response_model=responses.submitDataWindowRes)
+async def getModel(datawindow: requests.SubmitDataWindow):
+    # TODO
     pass
