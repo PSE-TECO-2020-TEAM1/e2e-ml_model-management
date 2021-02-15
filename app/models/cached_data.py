@@ -12,11 +12,11 @@ from app.models.mongo_model import OID, MongoModel
 #    slidingWindows: List[OID] = Field([], description="Data imputed with this sliding window parameters")
 
 class SlidingWindow(MongoModel):
-    _id: Optional[OID] = None
+    id: Optional[OID] = None
     data_windows: List[Binary] = Field(..., description="DataFrame[]")
     labels_of_data_windows: List[int]
-    extracted_features: Dict[Feature, OID] = Field([], description="Features extracted with this imputed data")
+    extracted_features: Dict[Feature, OID] = Field({}, description="Features extracted with this imputed data")
 
 class ExtractedFeature(MongoModel):
-    _id: Optional[OID] = None
+    id: Optional[OID] = None
     data: Binary = Field(..., description="DataFrame")

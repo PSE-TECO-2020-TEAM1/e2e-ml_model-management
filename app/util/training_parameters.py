@@ -13,20 +13,20 @@ class Imputation(str, Enum):
 
 
 class Normalizer(str, Enum):
-    MIN_MAX_SCALERMIN_MAX_SCALER = "MIN_MAX_SCALERMIN_MAX_SCALER"
+    MIN_MAX_SCALER = "MIN_MAX_SCALER"
     NORMALIZER = "NORMALIZER"
     QUANTILE_TRANSFORMER = "QUANTILE_TRANSFORMER"
     ROBUST_SCALER = "ROBUST_SCALER"
     STANDARD_SCALER = "STANDARD_SCALER"
 
-
+#TODO FEATUREs by the tsfresh names
 class Feature(str, Enum):
-    MIN = "MIN"
-    MAX = "MAX"
-    VARIANCE = "VARIANCE"
-    ENERGY = "ENERGY"
+    MINIMUM = "minimum"
+    MAXIMUM = "maximum"
+    VARIANCE = "variance"
+    ENERGY = "abs_energy"
     AUTOREGRESSIVE_CORRELATION = "AUTOREGRESSIVE_CORRELATION"
-    MEAN = "MEAN"
+    MEAN = "mean"
     IQR = "IQR"
     PEARSON_CORRELATION = "PEARSON_CORRELATION"
     SKEWNESS = "SKEWNESS"

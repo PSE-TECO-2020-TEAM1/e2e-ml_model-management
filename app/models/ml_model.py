@@ -11,7 +11,7 @@ class PerformanceMetricsPerLabel(MongoModel):
     labels: Dict[str, PerformanceMetrics]
 
 class ML_Model(MongoModel):
-    _id: Optional[OID] = None
+    id: Optional[OID] = None
     name: str
     window_size: int
     sliding_step: int

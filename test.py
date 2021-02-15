@@ -1,14 +1,16 @@
+from enum import Enum
+from pickle import dumps
 from typing import Dict, Optional
+
+from bson import Binary
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from pydantic.fields import Field
 from pydantic.main import BaseConfig
+
 from app.models.workspace import Workspace
-from enum import Enum
-from pickle import dumps
-from bson import Binary
 
 #TODO delete once understood xd
 
@@ -26,12 +28,24 @@ async def do_find():
 
 from enum import Enum
 
+
 class Classifier(dict, Enum):
     MLP_CLASSIFIER = {"a": 1}
 
 class Del(BaseModel):
     a: Classifier
 
+from pydantic import BaseModel
+
+
+class Model(BaseModel):
+    id: str
+    a: Optional[str] = None
+
+m = Model(_id="asd")
+print(m.dict())
+
 import asyncio
+
 loop = asyncio.get_event_loop()
 loop.run_until_complete(do_insert(Del(a=Classifier.MLP_CLASSIFIER).dict()))
