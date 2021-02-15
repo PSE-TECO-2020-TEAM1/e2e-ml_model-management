@@ -29,7 +29,7 @@ class WorkspaceData(MongoModel):
     sliding_windows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
 
 class Workspace(MongoModel):
-    _id: Optional[OID] = None
+    _id: OID
     user_id: OID
     prediction_ids: Dict[str, OID] = Field({}, description="predictionId -> modelId")
     sensors: List[Sensor]

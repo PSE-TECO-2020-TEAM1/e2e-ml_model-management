@@ -8,7 +8,7 @@ from app.models.workspace import Sensor
 from app.util.training_parameters import Classifier, Imputation, Feature, Normalizer 
 
 class WorkspaceReq(MongoModel):
-    workspaceId: OID
+    workspace_id: OID
 
 class PostCreateWorkspaceReq(WorkspaceReq):
     sensors: List[Sensor]

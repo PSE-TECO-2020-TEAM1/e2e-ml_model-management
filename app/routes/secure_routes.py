@@ -1,8 +1,10 @@
+from app.models.workspace import Workspace
 from app.models.mongo_model import OID
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
 import jwt
 
+from app.db.mongodb import db
 import app.models.requests as requests
 import app.models.responses as responses
 
@@ -12,12 +14,12 @@ async def extract_userId(auth_header: str = Header(None)) -> str:
     except:
         raise HTTPException(401)
 
-router = APIRouter(prefix="/api")
+router = APIRouter()
 
 @router.post("/workspaces/createModelWorkspace", status_code=status.HTTP_201_CREATED)
-async def create_model_workspace(req: requests.PostCreateWorkspaceReq, userId: OID = Depends(extract_userId)):
-    #TODO sample route
-    pass
+async def create_model_workspace(req: requests.PostCreateWorkspaceReq, user_id: OID = Depends(extract_userId)):
+    workspace: Workspace = Workspace(_id=req.workspace_id, user_id=user_id, sensors=req.sensors)
+    await db.workspaces.insert_one(workspace.dict())
 
 @router.get("/workspaces/{workspaceId}/models", response_model = responses.GetModelsRes, status_code=status.HTTP_200_OK)
 async def get_models(workspaceId: OID, userId: OID = Depends(extract_userId)):
@@ -25,8 +27,9 @@ async def get_models(workspaceId: OID, userId: OID = Depends(extract_userId)):
     pass
 
 @router.post("/workspaces/{workspaceId}/train", status_code=status.HTTP_200_OK)
-async def post_train(req: requests.postTrainReq, userId: OID = Depends(extract_userId)):
+async def post_train(req: requests.PostTrainReq, userId: OID = Depends(extract_userId)):
     #TODO
+
     pass
 
 @router.get("/workspaces/{workspaceId}/trainingProgress", response_model = responses.GetTrainingProgressRes, status_code=status.HTTP_200_OK)

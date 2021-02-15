@@ -32,10 +32,12 @@ class Trainer():
 
     def train(self):
         # data split to windows
+        print("yasiyorum bu hayati")
         pipeline_data = self.__get_data_split_to_windows()
-
+        print(pipeline_data)
         # extract features
         pipeline_data = self.__get_extracted_features(pipeline_data)
+        print(pipeline_data)
 
         # normalize
         normalizeTuple: Tuple[DataFrame, INormalizer] = self.__normalize(pipeline_data)
@@ -78,7 +80,7 @@ class Trainer():
             # For each window in this sample, incremented by the sliding step value starting from 0
             for x in range(start=0, stop=length_of_data_points, step=self.sliding_step):
                 #  [time][sensor e.g acc_x]
-                data_window: List[Dict[str, float]] = [[] for in range(self.window_size)]
+                data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
                 # For each sensor (sorted so that we always get the same column order)
                 for sensor in sorted(sample.sensor_data_points):
                     # Data points of this sensor (time as index)
@@ -130,7 +132,7 @@ class Trainer():
     def __extractFeatures(self, data_windows: List[DataFrame], features: List[Feature]) -> Dict[Feature, DataFrame]:
         # TODO parallelize maybe xd
         settings = {key.value: ComprehensiveFCParameters()[key.value] for key in features}
-        newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {f:[[] for in range(len(data_windows))] for f in features}
+        newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {f:[{} for _range_ in range(len(data_windows))] for f in features}
         for data_window_index in range(len(data_windows)):
             data_window = data_windows[data_window_index]
             data_window["id"] = 0
