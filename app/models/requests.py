@@ -27,22 +27,18 @@ class PostTrainReq(WorkspaceReq):
 
     @validator("hyperparameters")
     def valid_hyperparameters(cls, v, values):
+        # Check if v is legal configuration, raise an error if so
         config_space = get_config_space(values["classifier"])
         config = Configuration(config_space, v)
-        try:
-            config.is_valid_configuration()
-            result = config.get_dictionary()
-            for key, value in result.items():
-                if value == "None":
-                    result[key] = None
-                elif value == "True":
-                    result[key] = True
-                elif value == "False":
-                    result[key] = False
-            return config
-        except:
-            raise ValueError("hyperparameters not valid")
-
+        # Parse strings to actual types (strings are required by ConfigSpace module ¯\_(ツ)_/¯ )
+        for key, value in v.items():
+            if value == "None":
+                v[key] = None
+            elif value == "True":
+                v[key] = True
+            elif value == "False":
+                v[key] = False
+        return config
 
 class GetPredictionConfig(BaseModel):
     predectionID: str

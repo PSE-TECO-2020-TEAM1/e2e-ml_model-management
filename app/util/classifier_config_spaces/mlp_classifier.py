@@ -2,8 +2,7 @@ from ConfigSpace.conditions import InCondition
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
-                                         UniformIntegerHyperparameter,
-                                         UnParametrizedHyperparameter)
+                                         UniformIntegerHyperparameter)
 
 cs = ConfigurationSpace()
 hidden_layer_depth = UniformIntegerHyperparameter(name="hidden_layer_depth",
@@ -31,19 +30,19 @@ n_iter_no_change = Constant(name="n_iter_no_change", value=32)
 
 validation_fraction = Constant(name="validation_fraction", value=0.1)
 
-tol = UnParametrizedHyperparameter(name="tol", value=1e-4)
-
 solver = Constant(name="solver", value='adam')
 
-batch_size = UnParametrizedHyperparameter(name="batch_size", value="auto")
+tol = Constant(name="tol", value=1e-4)
 
-shuffle = UnParametrizedHyperparameter(name="shuffle", value="True")
+batch_size = Constant(name="batch_size", value="auto")
 
-beta_1 = UnParametrizedHyperparameter(name="beta_1", value=0.9)
+shuffle = Constant(name="shuffle", value="True")
 
-beta_2 = UnParametrizedHyperparameter(name="beta_2", value=0.999)
+beta_1 = Constant(name="beta_1", value=0.9)
 
-epsilon = UnParametrizedHyperparameter(name="epsilon", value=1e-8)
+beta_2 = Constant(name="beta_2", value=0.999)
+
+epsilon = Constant(name="epsilon", value=1e-8)
 
 cs.add_hyperparameters([hidden_layer_depth, num_nodes_per_layer,
                         activation, alpha,
@@ -52,6 +51,6 @@ cs.add_hyperparameters([hidden_layer_depth, num_nodes_per_layer,
                         solver, batch_size, shuffle,
                         beta_1, beta_2, epsilon])
 
-validation_fraction_cond = InCondition(
-    validation_fraction, early_stopping, ["valid"])
+validation_fraction_cond = InCondition(validation_fraction, early_stopping, ["valid"])
+
 cs.add_conditions([validation_fraction_cond])

@@ -1,16 +1,22 @@
+from fastapi import APIRouter
+
+from app.util.training_parameters import Feature, Imputation, Normalization
 import app.models.requests as requests
 import app.models.responses as responses
-from fastapi import APIRouter
-from pydantic import BaseModel
 
 router = APIRouter()
 
 
-@router.get("/parameters", response_model=responses.GetParameterRes)
-async def parameters():
-    # TODO
-    pass
-
+@router.get("/parameters", response_model=responses.GetParametersRes)
+async def getParameters():
+    response = responses.GetParametersRes(
+        features=[f for f in Feature],
+        imputers=[i for i in Imputation],
+        normalizers=[n for n in Normalization],
+        #TODO here xd
+        classifier_selections=[]
+    ) 
+        
 
 @router.get("/predictionConfig", response_model=responses.PredictionConfigRes)
 async def getModel(predictionConfigreq: requests.GetPredictionConfig):

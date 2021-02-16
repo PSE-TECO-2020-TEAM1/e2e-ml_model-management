@@ -1,6 +1,6 @@
 from enum import Enum
 
-
+#TODO lowercase all ???
 class Imputation(str, Enum):
     MEAN_IMPUTATION = "MEAN_IMPUTATION"
     ZERO_INTERPOLATION = "ZERO_INTERPOLATION"
@@ -20,12 +20,12 @@ class Normalization(str, Enum):
 
 # TODO write FEATUREs by the tsfresh names
 class Feature(str, Enum):
-    MINIMUM = "minimum"
-    MAXIMUM = "maximum"
-    VARIANCE = "variance"
-    ENERGY = "abs_energy"
+    MINIMUM = "MINIMUM"
+    MAXIMUM = "MAXIMUM"
+    VARIANCE = "VARIANCE"
+    ABS_ENERGY = "ABS_ENERGY"
     AUTOREGRESSIVE_CORRELATION = "AUTOREGRESSIVE_CORRELATION"
-    MEAN = "mean"
+    MEAN = "MEAN"
     IQR = "IQR"
     PEARSON_CORRELATION = "PEARSON_CORRELATION"
     SKEWNESS = "SKEWNESS"

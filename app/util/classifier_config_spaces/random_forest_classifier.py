@@ -1,8 +1,7 @@
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
+from ConfigSpace.hyperparameters import (CategoricalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
-                                         UniformIntegerHyperparameter,
-                                         UnParametrizedHyperparameter)
+                                         UniformIntegerHyperparameter)
 
 cs: ConfigurationSpace = ConfigurationSpace()
 
@@ -21,14 +20,14 @@ min_samples_split = UniformIntegerHyperparameter(
 min_samples_leaf = UniformIntegerHyperparameter(
     "min_samples_leaf", 1, 20, default_value=1)
 
-min_weight_fraction_leaf = UnParametrizedHyperparameter(
+min_weight_fraction_leaf = Constant(
     "min_weight_fraction_leaf", 0.)
 
-max_depth = UnParametrizedHyperparameter("max_depth", "None")
+max_depth = Constant("max_depth", "None")
 
-max_leaf_nodes = UnParametrizedHyperparameter("max_leaf_nodes", "None")
+max_leaf_nodes = Constant("max_leaf_nodes", "None")
 
-min_impurity_decrease = UnParametrizedHyperparameter(
+min_impurity_decrease = Constant(
     'min_impurity_decrease', 0.0)
 
 cs.add_hyperparameters([criterion, max_features,

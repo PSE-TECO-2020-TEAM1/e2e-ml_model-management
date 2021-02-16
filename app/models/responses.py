@@ -1,5 +1,7 @@
+from typing import List
 from pydantic import BaseModel
 
+from app.util.training_parameters import Feature, Imputation, Normalization
 
 class Hyperparameters():
     name: str
@@ -8,14 +10,15 @@ class Hyperparameters():
 
 class Classifiers():
     name: str
-    Hyperparameters: list[Hyperparameters]
+    Hyperparameters: List[Hyperparameters]
 
 
-class GetParameterRes(BaseModel):
-    imputation: list[str]
-    features: list[str]
-    normalizers: list[str]
-    classifiers: Classifiers
+class GetParametersRes(BaseModel):
+    #TODO sliding window min max constraints here ?
+    features: List[Feature]
+    imputers: List[Imputation]
+    normalizers: List[Normalization]
+    classifier_selections: List[ClassifierSelection]
 
 
 class GetModelsRes(BaseModel):

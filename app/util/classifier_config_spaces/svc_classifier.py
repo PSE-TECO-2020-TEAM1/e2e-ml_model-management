@@ -1,9 +1,8 @@
 from ConfigSpace.conditions import EqualsCondition, InCondition
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
+from ConfigSpace.hyperparameters import (CategoricalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
-                                         UniformIntegerHyperparameter,
-                                         UnParametrizedHyperparameter)
+                                         UniformIntegerHyperparameter)
 
 cs: ConfigurationSpace = ConfigurationSpace()
 
@@ -25,11 +24,11 @@ shrinking = CategoricalHyperparameter("shrinking", ["True", "False"],
 tol = UniformFloatHyperparameter("tol", 1e-5, 1e-1, default_value=1e-3,
                                  log=True)
 
-max_iter = UnParametrizedHyperparameter("max_iter", -1)
-
 degree_depends_on_poly = EqualsCondition(degree, kernel, "poly")
 
 coef0_condition = InCondition(coef0, kernel, ["poly", "sigmoid"])
+
+max_iter = Constant("max_iter", -1)
 
 cs.add_hyperparameters([C, kernel, degree, gamma, coef0, shrinking,
                         tol, max_iter])
