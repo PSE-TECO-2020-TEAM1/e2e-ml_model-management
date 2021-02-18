@@ -10,7 +10,7 @@ from pydantic import BaseModel, validator
 
 
 class WorkspaceReq(MongoModel):
-    workspace_id: OID
+    workspaceId: OID
 
 
 class PostCreateWorkspaceReq(WorkspaceReq):
@@ -40,9 +40,8 @@ class PostTrainReq(WorkspaceReq):
                 v[key] = False
         return config
 
-class GetPredictionConfig(BaseModel):
-    predectionID: str
-
+class GetPredictionConfigReq(WorkspaceReq):
+    predictionId: str
 
 class SubmitDataWindow(BaseModel):
-    predectionID: str
+    predictionId: str
