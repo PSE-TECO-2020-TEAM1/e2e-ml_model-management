@@ -12,7 +12,7 @@ class IImputer(ABC):
         pass
 
     @abstractmethod
-    def transform(self, df: DataFrame) -> List[DataFrame]:
+    def transform(self, df: DataFrame) -> ndarray:
         pass
 
 
@@ -23,9 +23,8 @@ class INormalizer(ABC):
         pass
 
     @abstractmethod
-    def transform(self, df: DataFrame) -> DataFrame:
+    def transform(self, df: DataFrame) -> ndarray:
         pass
-
 
 class IClassifier(ABC):
 

@@ -1,6 +1,6 @@
 from enum import Enum
 from pickle import dumps
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from bson import Binary
 from bson.errors import InvalidId
@@ -28,24 +28,19 @@ async def do_find():
 
 from enum import Enum
 
+class A(str, Enum):
+    elem1 = "elem1"
+    elem2 = "elem2"
 
-class Classifier(dict, Enum):
-    MLP_CLASSIFIER = {"a": 1}
+class B(BaseModel):
+    a_dict: Dict[A, float]
 
-class Del(BaseModel):
-    a: Classifier
+class C(BaseModel):
+    b_dict: Dict[str, List[B]]
 
-from pydantic import BaseModel
-
-
-class Model(BaseModel):
-    id: str
-    a: Optional[str] = None
-
-m = Model(_id="asd")
-print(m.dict())
+print(C(b_dict = {"1": [{"elem1": 0.97}]}))
 
 import asyncio
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(do_insert(Del(a=Classifier.MLP_CLASSIFIER).dict()))
+loop.run_until_complete()

@@ -1,3 +1,4 @@
+from app.models.ml_model import ML_Model, PerformanceMetrics, PerformanceMetricsPerLabel
 import pickle
 from typing import Dict, List, Tuple, Union
 
@@ -6,12 +7,13 @@ from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
 from app.models.workspace import DataPoint, Sample, Workspace
 from app.training.factory import get_classifier, get_imputer, get_normalizer
-from app.util.ml_objects import IClassifier, INormalizer
+from app.util.ml_objects import IClassifier, IImputer, INormalizer
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pandas import DataFrame, concat
 from tsfresh.feature_extraction import ComprehensiveFCParameters
+from sklearn.metrics import classification_report
 
 
 class Trainer():
@@ -19,8 +21,8 @@ class Trainer():
     def __init__(self, db: AsyncIOMotorDatabase, workspace_id: OID, model_name: str, window_size: int, sliding_step: int, features: List[Feature], imputation: Imputation,
                  normalizer: Normalization, classifier: Classifier, hyperparameters: Dict[str, Union[str, float, int, bool]]):
         # TODO wrapper for config?
+        self.progress: int = 0  # percentage
         self.db = db
-        self.progress = 0  # percentage
         self.workspace_id = workspace_id
         self.model_name = model_name
         self.imputation = imputation
@@ -32,23 +34,46 @@ class Trainer():
         self.sliding_step = sliding_step
 
     async def train(self):
+        workspace_document = await self.db.workspaces.find_one({"_id": self.workspace_id})
+        workspace = Workspace(**workspace_document, id=workspace_document["_id"])
+
         # data split to windows
-        pipeline_data = await self.__get_data_split_to_windows()
+        pipeline_data = await self.__get_data_split_to_windows(workspace)
         labels_of_data_windows = pipeline_data.labels_of_data_windows
 
         # extract features
         pipeline_data = await self.__get_extracted_features(pipeline_data)
 
+        # train-test split
+        train_data = pipeline_data.iloc[:int(pipeline_data.shape[0]*0.8)]
+        train_labels = labels_of_data_windows[:int(len(labels_of_data_windows) * 0.8)]
+        test_data = pipeline_data.iloc[int(pipeline_data.shape[0]*0.8):]
+        test_labels = labels_of_data_windows[int(len(labels_of_data_windows) * 0.8):]
+
+        del pipeline_data
+        del labels_of_data_windows
+
+        # impute
+        (train_data, test_data, imputer_object) = self.__impute(train_data, test_data)
+
         # normalize
-        (pipeline_data, normalizer_object) = self.__normalize(pipeline_data)
+        (train_data, test_data, normalizer_object) = self.__normalize(train_data, test_data)
 
         # train
-        classifier_object: IClassifier = self.__train(pipeline_data, labels_of_data_windows)
+        classifier_object: IClassifier = self.__train(pipeline_data, train_labels)
+
+        # TODO performance metrics
+        performance_metrics = self.__get_performance_metrics(
+            classifier_object, test_data, test_labels, workspace.workspace_data.int_to_label)
+
         # save ml_model
 
-    async def __get_data_split_to_windows(self) -> SlidingWindow:
-        workspace_document = await self.db.workspaces.find_one({"_id": self.workspace_id})
-        workspace = Workspace(**workspace_document, id=workspace_document["_id"])
+        ml_model = ML_Model(name=self.model_name, window_size=self.window_size, sliding_step=self.sliding_step, performance_metrics=performance_metrics,
+                            imputer_object=imputer_object, normalizer_object=normalizer_object, classifier_object=classifier_object)
+
+        await self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
+
+    async def __get_data_split_to_windows(self, workspace: Workspace) -> SlidingWindow:
         workspace_data = workspace.workspace_data
         # If already cached, retrieve from the database
         if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.sliding_windows:
@@ -148,13 +173,29 @@ class Trainer():
             newly_extracted_features[feature] = DataFrame(data)
         return newly_extracted_features
 
-    def __normalize(self, data: DataFrame) -> Tuple[DataFrame, INormalizer]:
+    def __impute(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, IImputer]:
+        imputer_object: IImputer = get_imputer(self.imputation)
+        imputer_object.fit(train_data)
+        imputed_train_data = DataFrame(imputer_object.transform(train_data), columns=train_data.columns)
+        imputed_test_data = DataFrame(imputer_object.transform(test_data), columns=test_data.columns)
+        return (imputed_train_data, imputed_test_data, imputer_object)
+
+    def __normalize(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, INormalizer]:
         normalizer_object: INormalizer = get_normalizer(self.normalizer)
-        normalizer_object.fit(data)
-        normalized_data = DataFrame(normalizer_object.transform(data), columns=data.columns)
-        return (normalized_data, normalizer_object)
+        normalizer_object.fit(train_data)
+        normalized_train_data = DataFrame(normalizer_object.transform(train_data), columns=train_data.columns)
+        normalized_test_data = DataFrame(normalizer_object.transform(train_data), columns=test_data.columns)
+        return (normalized_train_data, normalized_test_data, normalizer_object)
 
     def __train(self, data: DataFrame, labels_of_data_windows: List[int]) -> IClassifier:
         classifier_object = get_classifier(self.classifier, self.hyperparameters)
         classifier_object.fit(data, labels_of_data_windows)
         return classifier_object
+
+    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int], label_code_to_label: Dict[int, str]) -> PerformanceMetricsPerLabel:
+        prediction = classifier_object.predict(test_data)
+        result = {}
+        for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True):
+            if label_code in label_code_to_label:
+                result[label_code_to_label[label_code]] = PerformanceMetrics(metrics=performance_metric)
+        return PerformanceMetricsPerLabel(metrics_of_labels=result)
