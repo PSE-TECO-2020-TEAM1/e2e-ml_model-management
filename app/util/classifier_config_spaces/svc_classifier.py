@@ -6,7 +6,7 @@ from ConfigSpace.hyperparameters import (CategoricalHyperparameter, Constant,
 
 cs: ConfigurationSpace = ConfigurationSpace()
 
-C = UniformFloatHyperparameter("C", 0.03125, 32768, log=True,
+C = UniformFloatHyperparameter("C", 0.03125, 32768,
                                default_value=1.0)
 
 kernel = CategoricalHyperparameter(name="kernel",
@@ -15,14 +15,13 @@ kernel = CategoricalHyperparameter(name="kernel",
 degree = UniformIntegerHyperparameter("degree", 2, 5, default_value=3)
 
 gamma = UniformFloatHyperparameter("gamma", 3.0517578125e-05, 8,
-                                   log=True, default_value=0.1)
+                                   default_value=0.1)
 coef0 = UniformFloatHyperparameter("coef0", -1, 1, default_value=0)
 
 shrinking = CategoricalHyperparameter("shrinking", ["True", "False"],
                                       default_value="True")
 
-tol = UniformFloatHyperparameter("tol", 1e-5, 1e-1, default_value=1e-3,
-                                 log=True)
+tol = UniformFloatHyperparameter("tol", 1e-5, 1e-1, default_value=1e-3)
 
 degree_depends_on_poly = EqualsCondition(degree, kernel, "poly")
 

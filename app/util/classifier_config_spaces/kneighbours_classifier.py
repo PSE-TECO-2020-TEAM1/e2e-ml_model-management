@@ -5,7 +5,7 @@ from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
 cs = ConfigurationSpace()
 
 n_neighbors = UniformIntegerHyperparameter(
-    name="n_neighbors", lower=1, upper=100, log=True, default_value=1)
+    name="n_neighbors", lower=1, upper=100, default_value=1)
 
 weights = CategoricalHyperparameter(
     name="weights", choices=["uniform", "distance"], default_value="uniform")
