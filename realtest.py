@@ -22,7 +22,8 @@ async def runtest():
             "_id": workspace_id,
             "user_id": user_id,
             "workspace_data": {
-                "label_dict": {"blue": 1, "red": 2},
+                "label_to_label_code": {"blue": 1, "red": 2},
+                "label_code_to_label": {"1": "blue", "2": "red"},
                 "sliding_windows": {},
                 "samples": [
                     {
@@ -71,21 +72,6 @@ async def runtest():
             }
         }
     )
-    import app.util.classifier_config_spaces as config
-    configuration: Dict[str, Union[str, float, int, bool]] = config.random_forest.get_default_configuration().get_dictionary()
-    configuration["bootstrap"] = "False"
-    for key, value in configuration.items():
-        if value == "None":
-            configuration[key] = None
-        elif value == "False":
-            configuration[key] = False
-        elif value == "True":
-            configuration[key] = True
-    #config = Configuration(config.random_forest, {"bootstrap": "False"})
-    trainer1 = Trainer(db, workspace_id, "atalay", 1, 1, [Feature.MAXIMUM], Imputation.MEAN_IMPUTATION, Normalization.NORMALIZER, Classifier.RANDOM_FOREST_CLASSIFIER, configuration)
-    # # trainer2 = Trainer(db, workspace_id, "atalay", Imputation.MEAN_IMPUTATION, [Feature.MAXIMUM, Feature.VARIANCE], Normalizer.NORMALIZER, Classifier.RANDOM_FOREST_CLASSIFIER , 1, 1, None)
-    await trainer1.train()
-    # # await trainer2.train()
 
 import asyncio
 

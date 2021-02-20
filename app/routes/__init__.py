@@ -6,3 +6,4 @@ router: APIRouter = APIRouter(prefix="/api")
 
 router.include_router(common_router)
 router.include_router(secure_router)
+

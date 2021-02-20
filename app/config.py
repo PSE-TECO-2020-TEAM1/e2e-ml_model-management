@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     client_uri: str
+    client_port: int
     db_name: str
     host: str
     port: int
