@@ -1,34 +1,33 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List
 
 from app.models.mongo_model import OID, MongoModel
 from app.models.workspace import Sensor
-from app.util.classifier_config_spaces import get_config_space
+from app.util.classifier_config_spaces import config_spaces
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
 from ConfigSpace import Configuration
 from pydantic import BaseModel, validator
 
 
-class WorkspaceReq(MongoModel):
+class PostCreateWorkspaceReq(MongoModel):
     workspaceId: OID
-
-
-class PostCreateWorkspaceReq(WorkspaceReq):
     sensors: List[Sensor]
 
 
-class PostTrainReq(WorkspaceReq):
-    model_name: str
+class PostTrainReq(BaseModel):
+    modelName: str
     imputation: Imputation
     features: List[Feature]
     normalizer: Normalization
     classifier: Classifier
-    hyperparameters: Dict[str, Union[str, float, int, bool]]
+    windowSize: int
+    slidingStep: int
+    hyperparameters: Dict[str, Any]
 
     @validator("hyperparameters")
     def valid_hyperparameters(cls, v, values):
         # Check if v is legal configuration, raise an error if so
-        config_space = get_config_space(values["classifier"])
+        config_space = config_spaces[values["classifier"]]
         config = Configuration(config_space, v)
         # Parse strings to actual types (strings are required by ConfigSpace module ¯\_(ツ)_/¯ )
         for key, value in v.items():
@@ -40,8 +39,8 @@ class PostTrainReq(WorkspaceReq):
                 v[key] = False
         return config
 
-class GetPredictionConfigReq(WorkspaceReq):
+class GetPredictionConfigReq(BaseModel):
     predictionId: str
 
-class SubmitDataWindow(BaseModel):
+class SubmitDataReq(BaseModel):
     predictionId: str

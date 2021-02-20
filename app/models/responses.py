@@ -1,81 +1,39 @@
-from typing import List
+from pydantic import BaseModel
+from app.models.mongo_model import OID
+from app.models.ml_model import ML_Model
+from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 
-from app.util.training_parameters import Feature, Imputation, Normalization
-
-class Hyperparameters():
-    name: str
-    format: str
+from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
 
 
-class Classifiers():
-    name: str
-    Hyperparameters: List[Hyperparameters]
+class ClassifierSelection(BaseModel):
+    classifier: Classifier
+    hyperparameters: Dict[str, Dict[str, Any]]
+    conditions: List[str]
 
 
 class GetParametersRes(BaseModel):
-    #TODO sliding window min max constraints here ?
+    # TODO sliding window min max constraints here ?
     features: List[Feature]
     imputers: List[Imputation]
     normalizers: List[Normalization]
+    # windowSize: Tuple[int, int]
+    # slidingStep: Tuple[int, int]
     classifier_selections: List[ClassifierSelection]
 
 
 class GetModelsRes(BaseModel):
-    modelID: str
-    name: str
+    models: List[Tuple[OID, str]]
 
+class GetModelRes(BaseModel):
+    model: ML_Model
 
-class TrainingProgressRes(BaseModel):
-    progress: float
+class GetPredictionConfigRes(BaseModel):
+    pass # TODO
 
-
-class PerformanceMetrics():
-    name: str
-    score: int
-
-
-class LabelPerformanceMetrics():
-    label: str
-    PerformanceMetrics: list[PerformanceMetrics]
-
-
-class Parameters():
-    imputation: str
-    features: list[str]
-    normalizer: str
-    classifier: Classifiers
-
-
-class ModelRes(BaseModel):
-    labelPerformanceMetrics: list[LabelPerformanceMetrics]
-    parameters: Parameters
-
+class GetTrainingProgressRes(BaseModel):
+    pass # TODO
 
 class GetPredictionIdRes(BaseModel):
-    predictionID: str
-
-
-class PredictionConfig():
-    name: list[str]
-    samplingRate: int
-
-
-class PredictionConfigRes(BaseModel):
-    predictionConfig: PredictionConfig
-
-
-class DataPoints():
-    timeStamp: int
-    data: list[int]
-
-
-class SensorDataPoint():
-    sensor: str
-    dataPoints: list[DataPoints]
-
-
-class submitDataWindowRes(BaseModel):
-    start: int
-    end: int
-    sensortDataPionts: list[SensorDataPoint]
+    pass # TODO

@@ -18,20 +18,16 @@ class Normalization(str, Enum):
     ROBUST_SCALER = "ROBUST_SCALER"
     STANDARD_SCALER = "STANDARD_SCALER"
 
-# TODO write FEATUREs by the tsfresh names
 class Feature(str, Enum):
-    MINIMUM = "MINIMUM"
-    MAXIMUM = "MAXIMUM"
-    VARIANCE = "VARIANCE"
-    ABS_ENERGY = "ABS_ENERGY"
-    AUTOREGRESSIVE_CORRELATION = "AUTOREGRESSIVE_CORRELATION"
-    MEAN = "MEAN"
-    IQR = "IQR"
-    PEARSON_CORRELATION = "PEARSON_CORRELATION"
-    SKEWNESS = "SKEWNESS"
-    KURTOSIS = "KURTOSIS"
-    FOURIER_TRANSFORM = "FOURIER_TRANSFORM"
-
+    MINIMUM = "minimum"
+    MAXIMUM = "maximum"
+    VARIANCE = "variance"
+    ABS_ENERGY = "abs_energy"
+    MEAN = "mean"
+    MEDIAN = "median"
+    SKEWNESS = "skewness"
+    KURTOSIS = "kurtosis"
+    # TODO add more features
 
 class Classifier(str, Enum):
     KNEIGHBORS_CLASSIFIER = "KNEIGHBORS_CLASSIFIER"

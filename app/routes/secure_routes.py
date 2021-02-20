@@ -1,54 +1,121 @@
-import app.models.requests as requests
-import app.models.responses as responses
+from app.training.trainer import Trainer
+from typing import Dict, List, Tuple
 import jwt
-from app.db.mongodb import db
-from app.models.mongo_model import OID
-from app.models.workspace import Workspace
+import json
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
+from httpx import AsyncClient
+from bson import ObjectId
+
+import app.models.requests as request_models
+import app.models.responses as response_models
+from app.models.ml_model import ML_Model
+from app.db import db
+from app.process_pool import training_executor
+from app.models.mongo_model import OID
+from app.models.workspace import Sample, Workspace, WorkspaceData
 
 
-async def extract_userId(auth_header: str = Header(None)) -> str:
+async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
     try:
-        return jwt.decode(auth_header)["userId"]
+        #TODO ENV key
+        decoded = jwt.decode(jwt=Authorization.split()[1], key="sabahci_kahvesi", algorithms=["HS256"])
+        if "exp" not in decoded:
+            raise jwt.ExpiredSignatureError
+        return ObjectId(decoded["userId"])
     except:
-        raise HTTPException(401)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
 router = APIRouter()
 
 
 @router.post("/workspaces/createModelWorkspace", status_code=status.HTTP_201_CREATED)
-async def create_model_workspace(req: requests.PostCreateWorkspaceReq, user_id: OID = Depends(extract_userId)):
-    workspace: Workspace = Workspace(_id=req.workspace_id, user_id=user_id, sensors=req.sensors)
-    await db.workspaces.insert_one(workspace.dict())
+async def create_model_workspace(req: request_models.PostCreateWorkspaceReq, user_id = Depends(extract_userId)):
+    workspace = Workspace(id=req.workspace_id, user_id=user_id, sensors=req.sensors)
+    workspace_doc = workspace.dict(exclude={"id"})
+    workspace_doc["_id"] = workspace.id
+    await db.get().workspaces.insert_one(workspace_doc)
 
 
-@router.get("/workspaces/{workspaceId}/models", response_model=responses.GetModelsRes, status_code=status.HTTP_200_OK)
-async def get_models(workspaceId: OID, userId: OID = Depends(extract_userId)):
+@router.get("/workspaces/{workspaceId}/models", response_model=response_models.GetModelsRes, status_code=status.HTTP_200_OK)
+async def get_models(workspaceId: OID, userId = Depends(extract_userId)):
+    workspaceId = ObjectId(workspaceId)
+    models: List[Tuple[OID, str]]
+    model_ids_of_workspace = await db.get().workspaces.find_one(
+        {"_id": workspaceId, "user_id": userId}, {"_id": False, "ml_models": True})["ml_models"]
+    if model_ids_of_workspace is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
+
+    for model_id in model_ids_of_workspace:
+        model_name = await db.get().ml_models.find_one({"_id": model_id}, {"_id": False, "name": True})["name"]
+        models.append((model_id, model_name))
+    return response_models.GetModelsRes(models=models)
+
+
+@router.post("/workspaces/{workspaceId}/train", status_code=status.HTTP_201_CREATED)
+async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId = Depends(extract_userId)):
     # TODO
+    workspaceId = ObjectId(workspaceId)
+
+    if await db.get().workspaces.count_documents({"_id": workspaceId, "user_id": userId}, limit=1) == 0:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
+
+    # TODO change update workspace
+    # __update_workspace_data(workspaceId)
+
+    trainer = Trainer(db, workspaceId, req.modelName, req.windowSize, req.slidingStep,
+                      req.features, req.imputation, req.normalizer, req.classifier, req.hyperparameters)
+    #TODO delet this
+    await trainer.train()
+
+    #training_executor.submit(trainer.train)
+    # TODO append (workspaceID, trainer) to dict for training progress
+
+async def __update_workspace_data(workspace: Workspace):
+    async with AsyncClient() as http_client:
+        # TODO return murat?
+        last_modified: int = await http_client.get(url="/api/workspaces/" + workspace.id + "/samples", params={"onlyDate": True})
+
+        if last_modified is workspace.workspace_data.last_modified:
+            return
+
+        labels: List[str] = await http_client.get(url="")  # TODO complete api endpoint
+        label_to_label_code: Dict[str, int] = {labels[i]: i+1 for i in range(len(labels))}
+        label_to_label_code["Other"] = 0
+        label_code_to_label: Dict[int, str] = {i+1: labels[i] for i in range(len(labels))}
+        label_code_to_label[0] = "Other"
+        # TODO complete api endpoint
+        samples_response = json.loads(await http_client.get(url="").json())
+        samples: List[Sample] = [Sample.parse_raw(sample) for sample in samples_response]
+        new_workspace_data = WorkspaceData(
+            last_modified=last_modified, label_to_label_code=label_to_label_code, label_code_to_label=label_code_to_label, samples=samples)
+        db.get().workspaces.update_one({"_id": workspace.id}, {
+                                    "$set": {"workspace_data": new_workspace_data.dict()}})
+
+
+@router.get("/workspaces/{workspaceId}/trainingProgress", response_model=response_models.GetTrainingProgressRes, status_code=status.HTTP_200_OK)
+async def get_training_progress(workspaceId: OID, userId = Depends(extract_userId)):
+    # TODO
+    workspaceId = ObjectId(workspaceId)
     pass
 
 
-@router.post("/workspaces/{workspaceId}/train", status_code=status.HTTP_200_OK)
-async def post_train(req: requests.PostTrainReq, userId: OID = Depends(extract_userId)):
+@router.get("/workspaces/{workspaceId}/models/{modelId}", response_model=response_models.GetModelRes, status_code=status.HTTP_200_OK)
+async def get_model(workspaceId: OID, modelId: OID, userId = Depends(extract_userId)):
+    workspaceId = ObjectId(workspaceId)
+    modelId = ObjectId(modelId)
+    workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId, "user_id": userId}, {"_id": False, "ml_models": True})
+    if workspace_doc is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
+    if modelId not in workspace_doc["ml_models"]:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No model matched for the user")
+    model_document = await db.get().ml_models.find_one({"_id": modelId})
+    return response_models.GetModelRes(model=ML_Model(**model_document))
+
+
+@router.get("/workspaces/{workspaceId}/models/{modelId}/predictionId", response_model=response_models.GetPredictionIdRes, status_code=status.HTTP_200_OK)
+async def get_prediction_id(workspaceId: OID, modelId: OID, userId = Depends(extract_userId)):
     # TODO
-
-    pass
-
-
-@router.get("/workspaces/{workspaceId}/trainingProgress", response_model=responses.GetTrainingProgressRes, status_code=status.HTTP_200_OK)
-async def get_training_progress(workspaceId: OID, userId: OID = Depends(extract_userId)):
-    # TODO
-    pass
-
-
-@router.get("/workspaces/{workspaceId}/models/{modelId}", response_model=responses.GetModelRes, status_code=status.HTTP_200_OK)
-async def get_model(workspaceId: OID, modelId: OID, userId: OID = Depends(extract_userId)):
-    # TODO
-    pass
-
-
-@router.get("/workspaces/{workspaceId}/models/{modelId}/predictionId", response_model=responses.GetPredictionIdRes, status_code=status.HTTP_200_OK)
-async def get_prediction_id(workspaceId: OID, modelId: OID, userId: OID = Depends(extract_userId)):
-    # TODO
+    workspaceId = ObjectId(workspaceId)
+    modelId = ObjectId(modelId)
     pass

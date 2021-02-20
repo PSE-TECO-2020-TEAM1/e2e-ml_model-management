@@ -1,4 +1,6 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+
+from bson.binary import Binary
 
 from app.models.mongo_model import OID, MongoModel
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
@@ -18,7 +20,8 @@ class ML_Model(MongoModel):
     name: str
     window_size: int
     sliding_step: int
-    performance_metrics: PerformanceMetricsPerLabel
-    imputer_object: IImputer
-    normalizer_object: INormalizer
-    classifier_object: IClassifier
+    label_performance_metrics: PerformanceMetricsPerLabel
+    imputer_object: Binary
+    normalizer_object: Binary
+    classifier_object: Binary
+    hyperparameters: Dict[str, Any]

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Union
+from typing import Any, Callable, Dict
 
 import numpy
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
@@ -52,5 +52,5 @@ ClassifierDict: Dict[Classifier, Callable[[], IClassifier]] = {
 # TODO hyperparameters here ??
 
 
-def get_classifier(classifier: Classifier, hyperparameters: Dict[str, Union[str, float, int, bool]]) -> IClassifier:
+def get_classifier(classifier: Classifier, hyperparameters: Dict[str, Any]) -> IClassifier:
     return ClassifierDict[classifier](hyperparameters)

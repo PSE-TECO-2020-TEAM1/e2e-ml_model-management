@@ -19,6 +19,7 @@ gamma = UniformFloatHyperparameter("gamma", 3.0517578125e-05, 8,
 coef0 = UniformFloatHyperparameter("coef0", -1, 1, default_value=0)
 
 shrinking = CategoricalHyperparameter("shrinking", ["True", "False"],
+    
                                       default_value="True")
 
 tol = UniformFloatHyperparameter("tol", 1e-5, 1e-1, default_value=1e-3)
