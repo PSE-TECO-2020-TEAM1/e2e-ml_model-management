@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from pydantic.fields import Field
+
 from app.models.mongo_model import OID, MongoModel
 from app.models.workspace import Sensor
 from app.util.classifier_config_spaces import config_spaces
@@ -20,8 +22,8 @@ class PostTrainReq(MongoModel):
     features: List[Feature]
     normalizer: Normalization
     classifier: Classifier
-    windowSize: int
-    slidingStep: int
+    windowSize: int = Field(..., ge=4)
+    slidingStep: int = Field(..., ge=1)
     hyperparameters: Dict[str, Any]
 
     @validator("hyperparameters")

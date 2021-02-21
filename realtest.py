@@ -2,11 +2,18 @@ from typing import Dict, Union
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+import random
 
 from app.training.trainer import Trainer
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
 
+
+def fillData(num):
+    data_points = []
+    for i in range(num):
+        data_points.append({"values": [random.randint(1, 100) for i in range(3)]})
+    return data_points
 
 async def runtest():
     uri = 'mongodb://0.0.0.0/'
@@ -16,12 +23,15 @@ async def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
 
+    DATA_POINTS = 30000
+
     await client.drop_database("test")
     await db.workspaces.insert_one(
         {
             "_id": workspace_id,
             "user_id": user_id,
             "ml_models": [],
+            "progress": -1,
             "workspace_data": {
                 "label_to_label_code": {"blue": 1, "red": 2},
                 "label_code_to_label": {"1": "blue", "2": "red"},
@@ -31,63 +41,22 @@ async def runtest():
                         "label": "blue",
                         "timeframes": [{
                             "start": 0,
-                            "end": 1
+                            "end": DATA_POINTS
                         }],
                         "sensor_data_points": {
-                            "accelerometer": [
-                                {
-                                    "values": [1, 2, 3]
-                                    
-                                },
-                                {
-                                    "values": [31, 42, 53]
-                                },
-                                {
-                                    "values": [31, 42, 53]
-                                }
-                            ],
-                            "gyroscope": [
-                                {
-                                    "values": [90, 60, 90]      
-                                },
-                                {
-                                    "values": [13, 24, 35]
-                                },
-                                {
-                                    "values": [13, 24, 35]
-                                }
-                            ]
+                            "accelerometer": fillData(DATA_POINTS),
+                            "gyroscope": fillData(DATA_POINTS)
                         }
                     },
                     {
                         "label": "red",
                         "timeframes": [{
                             "start": 0,
-                            "end":2
+                            "end": DATA_POINTS
                         }],
                         "sensor_data_points": {
-                            "accelerometer": [
-                                {
-                                    "values": [90, 60, 90] 
-                                },
-                                {
-                                    "values": [31, 42, 53]
-                                },
-                                {
-                                    "values": [31, 42, 53]
-                                }
-                            ],
-                            "gyroscope": [
-                                {
-                                    "values": [1, 2, 3] 
-                                },
-                                {
-                                    "values": [13, 24, 35]
-                                },
-                                {
-                                    "values": [13, 24, 35]
-                                }
-                            ]
+                            "accelerometer": fillData(DATA_POINTS),
+                            "gyroscope": fillData(DATA_POINTS)
                         }
                     }
                 ]

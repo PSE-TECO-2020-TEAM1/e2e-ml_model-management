@@ -6,7 +6,7 @@ class ExecutorManager:
     def __init__(self):
         self.executor: ProcessPoolExecutor
 
-    def create(self):
+    def start(self):
         self.executor = ProcessPoolExecutor(max_workers=cpu_count())
 
     def shutdown(self):

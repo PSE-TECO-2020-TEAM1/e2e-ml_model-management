@@ -33,7 +33,7 @@ class GetPredictionConfigRes(MongoModel):
     pass # TODO
 
 class GetTrainingProgressRes(MongoModel):
-    pass # TODO
+    progress: int
 
 class GetPredictionIdRes(MongoModel):
     pass # TODO

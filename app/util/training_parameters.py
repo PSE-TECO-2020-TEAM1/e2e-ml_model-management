@@ -2,21 +2,21 @@ from enum import Enum
 
 #TODO lowercase all ???
 class Imputation(str, Enum):
-    MEAN_IMPUTATION = "MEAN_IMPUTATION"
-    ZERO_INTERPOLATION = "ZERO_INTERPOLATION"
-    LINEAR_INTERPOLATION = "LINEAR_INTERPOLATION"
-    QUADRATIC_INTERPOLATION = "QUADRATIC_INTERPOLATION"
-    CUBIC_INTERPOLATION = "CUBIC_INTERPOLATION"
-    MOVING_AVERAGE_IMPUTATION = "MOVING_AVERAGE_IMPUTATION"
-    LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION = "LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION"
+    MEAN_IMPUTATION = "mean_imputation"
+    ZERO_INTERPOLATION = "zero_interpolation"
+    LINEAR_INTERPOLATION = "linear_interpolation"
+    QUADRATIC_INTERPOLATION = "quadratic_interpolation"
+    CUBIC_INTERPOLATION = "cubic_interpolation"
+    MOVING_AVERAGE_IMPUTATION = "moving_average_imputation"
+    LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION = "last_observation_carried_forward_imputation"
 
 
 class Normalization(str, Enum):
-    MIN_MAX_SCALER = "MIN_MAX_SCALER"
-    NORMALIZER = "NORMALIZER"
-    QUANTILE_TRANSFORMER = "QUANTILE_TRANSFORMER"
-    ROBUST_SCALER = "ROBUST_SCALER"
-    STANDARD_SCALER = "STANDARD_SCALER"
+    MIN_MAX_SCALER = "min_max_scaler"
+    NORMALIZER = "normalizer"
+    QUANTILE_TRANSFORMER = "quantile_transformer"
+    ROBUST_SCALER = "robust_scaler"
+    STANDARD_SCALER = "standard_scaler"
 
 class Feature(str, Enum):
     MINIMUM = "minimum"
@@ -30,7 +30,7 @@ class Feature(str, Enum):
     # TODO add more features
 
 class Classifier(str, Enum):
-    KNEIGHBORS_CLASSIFIER = "KNEIGHBORS_CLASSIFIER"
-    MLP_CLASSIFIER = "MLP_CLASSIFIER"
-    RANDOM_FOREST_CLASSIFIER = "RANDOM_FOREST_CLASSIFIER"
-    SVC_CLASSIFIER = "SVC_CLASSIFIER"
+    KNEIGHBORS_CLASSIFIER = "kneighbors_classifier"
+    MLP_CLASSIFIER = "mlp_classifier"
+    RANDOM_FOREST_CLASSIFIER = "random_forest_classifier"
+    SVC_CLASSIFIER = "svc_classifier"

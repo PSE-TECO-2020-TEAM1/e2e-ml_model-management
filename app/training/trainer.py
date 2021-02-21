@@ -1,5 +1,6 @@
 import pickle
 from typing import Any, Dict, List, Tuple
+from pymongo.database import Database
 import tsfresh
 from pandas import DataFrame, concat
 from tsfresh.feature_extraction import ComprehensiveFCParameters
@@ -21,8 +22,8 @@ class Trainer():
     def __init__(self, workspace_id: OID, model_name: str, window_size: int, sliding_step: int, features: List[Feature], imputation: Imputation,
                  normalizer: Normalization, classifier: Classifier, hyperparameters: Dict[str, Any]):
         # TODO wrapper for config?
-        self.client = None
-        self.db = None
+        self.client: MongoClient
+        self.db: Database
 
         self.progress: int = 0  # percentage
         self.workspace_id = workspace_id
@@ -35,9 +36,8 @@ class Trainer():
         self.window_size = window_size
         self.sliding_step = sliding_step
 
-
     def train(self):
-        #TODO database client
+        # TODO database client in env
         self.client = MongoClient("mongodb://0.0.0.0/", 27017)
         self.db = self.client["test"]
 
@@ -45,13 +45,14 @@ class Trainer():
         workspace = Workspace(**workspace_document, id=workspace_document["_id"])
 
         # data split to windows
+
         pipeline_data = self.__get_data_split_to_windows(workspace)
         labels_of_data_windows = pipeline_data.labels_of_data_windows
 
         # extract features
         pipeline_data = self.__get_extracted_features(pipeline_data)
 
-        #TODO better way to split data ? 
+        # TODO better way to split data ?
         # train-test split
         train_data = pipeline_data.iloc[:int(pipeline_data.shape[0]*0.8)]
         train_labels = labels_of_data_windows[:int(len(labels_of_data_windows)*0.8)]
@@ -79,11 +80,12 @@ class Trainer():
                             imputer_object=pickle.dumps(imputer_object), normalizer_object=pickle.dumps(normalizer_object), classifier_object=pickle.dumps(classifier_object), hyperparameters=self.hyperparameters)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
-        self.db.workspaces.update_one({"_id": workspace.id}, {"$push": {"ml_models": result.inserted_id}})
-
+        self.db.workspaces.update_one({"_id": workspace.id}, {
+                                      "$push": {"ml_models": result.inserted_id}, "$set": {"progress": -1}})
+        print("finish")
 
     def __get_data_split_to_windows(self, workspace: Workspace) -> SlidingWindow:
-        #TODO handle timeframes
+        # TODO handle timeframes
         workspace_data = workspace.workspace_data
         # If already cached, retrieve from the database
         if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.sliding_windows:
@@ -104,25 +106,26 @@ class Trainer():
         return sliding_window
 
     def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[DataFrame], List[int]]:
-        #TODO CONFIRM WE USE INDEX INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
+        # TODO CONFIRM WE USE INDEX INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
         data_windows: List[DataFrame] = []
         labels_of_data_windows: List[int] = []
         for sample in samples:
             timeframe_iterator = iter(sample.timeframes)
             current_timeframe = next(timeframe_iterator)
 
-            #TODO FOR ÖMER: [1,2],[3,4] is not legal timeframes, use [1,4] instead
+            # TODO FOR ÖMER: [1,2],[3,4] is not legal timeframes, use [1,4] instead
 
             # Length of data points for each sensor is same, so we take the first one
             length_of_data_points = len(list(sample.sensor_data_points.values())[0])
             # For each window in this sample, incremented by the sliding step value starting from 0
-            for window_offset in range(0, length_of_data_points, self.sliding_step):
+            for window_offset in range(0, length_of_data_points - self.window_size + 1, self.sliding_step):
                 while window_offset > current_timeframe.end:
                     try:
                         current_timeframe = next(timeframe_iterator)
                     except:
                         break
-                data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + self.window_size - 1 <= current_timeframe.end
+                data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + \
+                    self.window_size - 1 <= current_timeframe.end
 
                 #  [time][sensor e.g acc_x]
                 data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
@@ -135,12 +138,11 @@ class Trainer():
                         # Append the values to this data window (index of values is e.g x in acc_x)
                         data_point_values = data_points[window_offset+datapoint_offset].values
                         data_window[datapoint_offset].update({sensor+str(v): data_point_values[v]
-                                               for v in range(len(data_point_values))})
+                                                              for v in range(len(data_point_values))})
                 # Append this data window as a DataFrame to the list of all data windows
                 data_windows.append(DataFrame(data_window))
                 labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else 0)
 
-        print(labels_of_data_windows)
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
@@ -165,7 +167,9 @@ class Trainer():
                 extracted_feature = ExtractedFeature(data=pickle.dumps(newly_extracted_features[feature]))
                 result = self.db.extracted_features.insert_one(extracted_feature.dict(exclude={"id"}))
                 self.db.sliding_windows.update_one({"_id": sliding_window.id},
-                                                         {"$set": {"extracted_features." + feature.value: result.inserted_id}})
+                                                   {"$set": {"extracted_features." + feature.value: result.inserted_id}})
+                                                
+
         # Join them together
         sorted_dataframes: List[DataFrame] = []
         for feature in sorted(self.features):
@@ -182,23 +186,29 @@ class Trainer():
         settings = {key.value: ComprehensiveFCParameters()[key.value] for key in features}
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
             f: [{} for _range_ in range(len(data_windows))] for f in features}
+
         for data_window_index in range(len(data_windows)):
-            data_window = data_windows[data_window_index]
-            data_window["id"] = 0
-            curr_extracted = tsfresh.extract_features(
-                data_window, column_id="id", default_fc_parameters=settings, disable_progressbar=True).to_dict(orient="records")[0]
-            extracted_keys = list(curr_extracted.keys())
-            for key_index in range(len(extracted_keys)):
-                curr_key = extracted_keys[key_index]
-                newly_extracted_features[features[key_index %
-                                                  len(features)]][data_window_index][curr_key] = curr_extracted[curr_key]
+            data_windows[data_window_index]["id"] = data_window_index
+
+        concatenated_data_windows = concat(data_windows, ignore_index=True)
+
+        extracted = tsfresh.extract_features(
+            concatenated_data_windows, column_id="id", default_fc_parameters=settings, disable_progressbar=True).to_dict(orient="records")
+
+        for data_window_index in range(len(data_windows)):
+            extracted_from_curr_window = extracted[data_window_index]
+            curr_extracted_keys = list(extracted_from_curr_window.keys())
+            for key_index in range(len(curr_extracted_keys)):
+                curr_key = curr_extracted_keys[key_index]
+                feature = features[key_index % len(features)]
+                newly_extracted_features[feature][data_window_index][curr_key] = extracted_from_curr_window[curr_key]
 
         for feature, data in newly_extracted_features.items():
             newly_extracted_features[feature] = DataFrame(data)
         return newly_extracted_features
 
+    # TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize...)
 
-    #TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize...)
     def __impute(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, IImputer]:
         imputer_object: IImputer = get_imputer(self.imputation)
         imputer_object.fit(train_data)

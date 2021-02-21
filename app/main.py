@@ -15,8 +15,8 @@ app.include_router(router)
 @app.on_event("startup")
 async def startup():
     db.connect_to_database()
-    training_executor.create()
-    prediction_executor.create()
+    training_executor.start()
+    prediction_executor.start()
 
 
 @app.on_event("shutdown")
@@ -26,5 +26,5 @@ async def shutdown():
     db.disconnect_from_database()
 
 if __name__ == "__main__":
-    set_start_method("spawn")
+    set_start_method("spawn") # Processes are not forked on creation (necessary for FastAPI-Uvicorn)
     uvicorn.run(app, host=config.get_settings().host, port=config.get_settings().port)

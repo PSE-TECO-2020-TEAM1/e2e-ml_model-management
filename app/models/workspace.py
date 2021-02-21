@@ -36,6 +36,7 @@ class WorkspaceData(MongoModel):
 class Workspace(MongoModel):
     id: Optional[OID]
     user_id: OID
+    progress: int = Field(-1, description="progress of current training in percentage, -1 if there is no training in progress")
     prediction_ids: Dict[str, OID] = Field({}, description="predictionId -> modelId")
     #TODO include back amk sensors: List[Sensor]
     workspace_data: WorkspaceData = Field(None, description="Data samples of the workspace (must be fetched if None)")
