@@ -21,6 +21,7 @@ async def runtest():
         {
             "_id": workspace_id,
             "user_id": user_id,
+            "ml_models": [],
             "workspace_data": {
                 "label_to_label_code": {"blue": 1, "red": 2},
                 "label_code_to_label": {"1": "blue", "2": "red"},

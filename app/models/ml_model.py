@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional
 from bson.binary import Binary
 
 from app.models.mongo_model import OID, MongoModel
-from app.util.ml_objects import IClassifier, IImputer, INormalizer
 from app.util.performance_metrics import PerformanceMetric
 
 
@@ -18,6 +17,7 @@ class PerformanceMetricsPerLabel(MongoModel):
 class ML_Model(MongoModel):
     id: Optional[OID] = None
     name: str
+    workspace_id: OID
     window_size: int
     sliding_step: int
     label_performance_metrics: PerformanceMetricsPerLabel

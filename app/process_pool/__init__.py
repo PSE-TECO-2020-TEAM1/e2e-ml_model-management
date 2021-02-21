@@ -1,12 +1,20 @@
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
+class ExecutorManager:
 
-training_executor: ProcessPoolExecutor = None
-prediction_executor: ProcessPoolExecutor = None
+    def __init__(self):
+        self.executor: ProcessPoolExecutor
 
+    def create(self):
+        self.executor = ProcessPoolExecutor(max_workers=cpu_count())
 
-def create_executors():
-    global training_executor, prediction_executor
-    training_executor = ProcessPoolExecutor(max_workers=cpu_count())
-    prediction_executor = ProcessPoolExecutor(max_workers=cpu_count())
+    def shutdown(self):
+        self.executor.shutdown()
+
+    def submit(self, callable):
+        return self.executor.submit(callable)
+
+    
+training_executor = ExecutorManager()
+prediction_executor = ExecutorManager()

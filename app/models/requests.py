@@ -14,7 +14,7 @@ class PostCreateWorkspaceReq(MongoModel):
     sensors: List[Sensor]
 
 
-class PostTrainReq(BaseModel):
+class PostTrainReq(MongoModel):
     modelName: str
     imputation: Imputation
     features: List[Feature]
@@ -39,8 +39,8 @@ class PostTrainReq(BaseModel):
                 v[key] = False
         return config
 
-class GetPredictionConfigReq(BaseModel):
+class GetPredictionConfigReq(MongoModel):
     predictionId: str
 
-class SubmitDataReq(BaseModel):
+class SubmitDataReq(MongoModel):
     predictionId: str

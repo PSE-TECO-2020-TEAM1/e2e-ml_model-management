@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from app.models.mongo_model import OID
+from app.models.mongo_model import MongoModel, OID
 from app.models.ml_model import ML_Model
 from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
@@ -7,13 +7,13 @@ from pydantic import BaseModel
 from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
 
 
-class ClassifierSelection(BaseModel):
+class ClassifierSelection(MongoModel):
     classifier: Classifier
     hyperparameters: Dict[str, Dict[str, Any]]
     conditions: List[str]
 
 
-class GetParametersRes(BaseModel):
+class GetParametersRes(MongoModel):
     # TODO sliding window min max constraints here ?
     features: List[Feature]
     imputers: List[Imputation]
@@ -23,17 +23,17 @@ class GetParametersRes(BaseModel):
     classifier_selections: List[ClassifierSelection]
 
 
-class GetModelsRes(BaseModel):
+class GetModelsRes(MongoModel):
     models: List[Tuple[OID, str]]
 
-class GetModelRes(BaseModel):
+class GetModelRes(MongoModel):
     model: ML_Model
 
-class GetPredictionConfigRes(BaseModel):
+class GetPredictionConfigRes(MongoModel):
     pass # TODO
 
-class GetTrainingProgressRes(BaseModel):
+class GetTrainingProgressRes(MongoModel):
     pass # TODO
 
-class GetPredictionIdRes(BaseModel):
+class GetPredictionIdRes(MongoModel):
     pass # TODO
