@@ -66,7 +66,6 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
 async def __update_workspace_data(workspace: Workspace):
     async with AsyncClient() as http_client:
-        # TODO return what from this api endpoint murat? change to string from json
         last_modified: int = await http_client.get(url="/api/workspaces/" + workspace.id + "/samples", params={"onlyDate": True})
         if last_modified == workspace.workspace_data.last_modified:
             return
@@ -78,9 +77,10 @@ async def __update_workspace_data(workspace: Workspace):
         label_code_to_label[0] = "Other"
         # TODO complete api endpoint
         samples_response = json.loads(await http_client.get(url="").json())
-        samples: List[Sample] = [Sample.parse_raw(sample) for sample in samples_response]
+        # samples: List[Sample] = [Sample.parse_raw(sample) for sample in samples_response]
+        result = await db.get().samples.insert_many(samples_response)
         new_workspace_data = WorkspaceData(
-            last_modified=last_modified, label_to_label_code=label_to_label_code, label_code_to_label=label_code_to_label, samples=samples)
+            last_modified=last_modified, label_to_label_code=label_to_label_code, label_code_to_label=label_code_to_label, samples=result.inserted_ids)
         await db.get().workspaces.update_one({"_id": workspace.id}, {
             "$set": {"workspace_data": new_workspace_data.dict()}})
 

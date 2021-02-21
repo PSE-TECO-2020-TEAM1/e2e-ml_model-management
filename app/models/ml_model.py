@@ -21,7 +21,7 @@ class ML_Model(MongoModel):
     window_size: int
     sliding_step: int
     label_performance_metrics: PerformanceMetricsPerLabel
-    imputer_object: Binary
-    normalizer_object: Binary
-    classifier_object: Binary
+    imputer_object: OID
+    normalizer_object: OID
+    classifier_object: OID
     hyperparameters: Dict[str, Any]

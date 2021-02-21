@@ -24,14 +24,12 @@ class Sample(MongoModel):
     timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
     sensor_data_points: Dict[str, List[DataPoint]]
 
-
 class WorkspaceData(MongoModel):
     #TODO include back last_modified: int = Field(..., description="Unix Timestamp")
     label_to_label_code: Dict[str, int] = Field(..., description="label -> identifier_number")
     label_code_to_label: Dict[int, str] = Field(..., description="identifier_number -> label")
-    samples: List[Sample]
+    samples: List[OID]
     sliding_windows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
-
     
 class Workspace(MongoModel):
     id: Optional[OID]

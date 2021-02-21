@@ -1,3 +1,4 @@
+from gridfs import GridFS
 import pickle
 from typing import Any, Dict, List, Tuple
 from pymongo.database import Database
@@ -24,6 +25,7 @@ class Trainer():
         # TODO wrapper for config?
         self.client: MongoClient
         self.db: Database
+        self.fs: GridFS
 
         self.progress: int = 0  # percentage
         self.workspace_id = workspace_id
@@ -40,12 +42,12 @@ class Trainer():
         # TODO database client in env
         self.client = MongoClient("mongodb://0.0.0.0/", 27017)
         self.db = self.client["test"]
+        self.fs = GridFS(self.db)
 
         workspace_document = self.db.workspaces.find_one({"_id": self.workspace_id})
         workspace = Workspace(**workspace_document, id=workspace_document["_id"])
 
         # data split to windows
-
         pipeline_data = self.__get_data_split_to_windows(workspace)
         labels_of_data_windows = pipeline_data.labels_of_data_windows
 
@@ -76,16 +78,17 @@ class Trainer():
             classifier_object, test_data, test_labels, workspace.workspace_data.label_code_to_label)
 
         # save ml_model
+        imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
+        normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
+        classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
         ml_model = ML_Model(name=self.model_name, workspace_id=self.workspace_id, window_size=self.window_size, sliding_step=self.sliding_step, label_performance_metrics=performance_metrics,
-                            imputer_object=pickle.dumps(imputer_object), normalizer_object=pickle.dumps(normalizer_object), classifier_object=pickle.dumps(classifier_object), hyperparameters=self.hyperparameters)
+                            imputer_object=imputer_object_db_id, normalizer_object=normalizer_object_db_id, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
         self.db.workspaces.update_one({"_id": workspace.id}, {
                                       "$push": {"ml_models": result.inserted_id}, "$set": {"progress": -1}})
-        print("finish")
 
     def __get_data_split_to_windows(self, workspace: Workspace) -> SlidingWindow:
-        # TODO handle timeframes
         workspace_data = workspace.workspace_data
         # If already cached, retrieve from the database
         if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.sliding_windows:
@@ -93,21 +96,29 @@ class Trainer():
             sliding_window_document = self.db.sliding_windows.find_one({"_id": data_windows_id})
             return SlidingWindow(**sliding_window_document, id=sliding_window_document["_id"])
         # Split yourself and cache otherwise
+
+        sample_docs = list(self.db.samples.find({"_id": {"$in": workspace_data.samples}}))
+
+        import time
+        start = time.time()
+        samples = [Sample(**sample_doc, id=sample_doc["_id"]) for sample_doc in sample_docs]
+        print(time.time() - start)
+        
         (data_windows, labels_of_data_windows) = self.__split_to_windows(
-            workspace_data.samples, workspace_data.label_to_label_code)
-        data_windows_binary: List[bytes] = []
-        for data_window in data_windows:
-            data_windows_binary.append(pickle.dumps(data_window))
-        sliding_window = SlidingWindow(data_windows=data_windows_binary, labels_of_data_windows=labels_of_data_windows)
+            samples, workspace_data.label_to_label_code)
+
+        inserted_id = self.fs.put(pickle.dumps(data_windows))
+        sliding_window = SlidingWindow(data_windows=inserted_id, labels_of_data_windows=labels_of_data_windows)
+        
         result = self.db.sliding_windows.insert_one(sliding_window.dict(exclude={"id"}))
         sliding_window.id = result.inserted_id
         self.db.workspaces.update_one({"_id": workspace.id}, {
             "$set": {"workspace_data.sliding_windows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
         return sliding_window
 
-    def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[DataFrame], List[int]]:
-        # TODO CONFIRM WE USE INDEX INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
-        data_windows: List[DataFrame] = []
+    def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[List[Dict]], List[int]]:
+        # TODO CONFIRM WE USE INDICES INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
+        data_windows: List[List[Dict]] = []
         labels_of_data_windows: List[int] = []
         for sample in samples:
             timeframe_iterator = iter(sample.timeframes)
@@ -140,60 +151,65 @@ class Trainer():
                         data_window[datapoint_offset].update({sensor+str(v): data_point_values[v]
                                                               for v in range(len(data_point_values))})
                 # Append this data window as a DataFrame to the list of all data windows
-                data_windows.append(DataFrame(data_window))
+                data_windows.append(data_window)
                 labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else 0)
 
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
         extracted_features_dict = sliding_window.extracted_features
-        cached_extracted_features: Dict[Feature, DataFrame] = {}
+        cached_extracted_features: Dict[Feature, List[Dict[str, float]]] = {}
         not_cached_features: List[Feature] = []
         # Sorted so that we always get the same column order
         for feature in self.features:
             if feature in extracted_features_dict:
                 extracted_feature_doc = self.db.extracted_features.find_one(
                     {"_id": extracted_features_dict[feature]})
-                cached_extracted_features[feature] = pickle.loads(extracted_feature_doc["data"])  # Binary to bytes??
+                cached_extracted_features[feature] = pickle.loads(self.fs.get(extracted_feature_doc["data"]).read())
             else:
                 not_cached_features.append(feature)
 
-        newly_extracted_features: Dict[Feature, DataFrame]
+        newly_extracted_features: Dict[Feature, List[Dict[str, float]]]
 
         if not_cached_features:
-            data_windows = [pickle.loads(data_window) for data_window in sliding_window.data_windows]
+            # We have to load from the database for the case where sliding windows are cached
+            data_windows = pickle.loads(self.fs.get(sliding_window.data_windows).read())
             newly_extracted_features = self.__extractFeatures(data_windows, not_cached_features)
             for feature in newly_extracted_features:
-                extracted_feature = ExtractedFeature(data=pickle.dumps(newly_extracted_features[feature]))
+                inserted_id = self.fs.put(pickle.dumps(newly_extracted_features[feature]))
+                extracted_feature = ExtractedFeature(data=inserted_id)
                 result = self.db.extracted_features.insert_one(extracted_feature.dict(exclude={"id"}))
                 self.db.sliding_windows.update_one({"_id": sliding_window.id},
                                                    {"$set": {"extracted_features." + feature.value: result.inserted_id}})
-                                                
 
         # Join them together
-        sorted_dataframes: List[DataFrame] = []
+        number_of_data_windows: int = None
+        sorted_dataframes: List[Dict] = None
         for feature in sorted(self.features):
-            to_concat: DataFrame = None
-            if feature in cached_extracted_features:
-                to_concat = cached_extracted_features[feature]
-            else:
-                to_concat = newly_extracted_features[feature]
-            sorted_dataframes.append(to_concat)
-        return concat(sorted_dataframes, axis=1)
+            dict_to_use = cached_extracted_features if feature in cached_extracted_features else newly_extracted_features
+            if number_of_data_windows is None:
+                number_of_data_windows = len(dict_to_use[feature])
+                sorted_dataframes = [{} for __range__ in range(number_of_data_windows)]
+            for i in range(number_of_data_windows):
+                sorted_dataframes[i].update(dict_to_use[feature][i])
 
-    def __extractFeatures(self, data_windows: List[DataFrame], features: List[Feature]) -> Dict[Feature, DataFrame]:
+        return DataFrame(sorted_dataframes)
+
+    def __extractFeatures(self, data_windows: List[List[Dict]], features: List[Feature]) -> Dict[Feature, List[Dict[str, float]]]:
         # TODO parallelize maybe xd
         settings = {key.value: ComprehensiveFCParameters()[key.value] for key in features}
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
             f: [{} for _range_ in range(len(data_windows))] for f in features}
 
-        for data_window_index in range(len(data_windows)):
-            data_windows[data_window_index]["id"] = data_window_index
+        concatenated_data_windows: List[Dict] = []
 
-        concatenated_data_windows = concat(data_windows, ignore_index=True)
+        for data_window_index in range(len(data_windows)):
+            for i in range(len(data_windows[data_window_index])):
+                data_windows[data_window_index][i]["id"] = data_window_index
+                concatenated_data_windows.append(data_windows[data_window_index][i])
 
         extracted = tsfresh.extract_features(
-            concatenated_data_windows, column_id="id", default_fc_parameters=settings, disable_progressbar=True).to_dict(orient="records")
+            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=False).to_dict(orient="records")
 
         for data_window_index in range(len(data_windows)):
             extracted_from_curr_window = extracted[data_window_index]
@@ -203,11 +219,12 @@ class Trainer():
                 feature = features[key_index % len(features)]
                 newly_extracted_features[feature][data_window_index][curr_key] = extracted_from_curr_window[curr_key]
 
+
         for feature, data in newly_extracted_features.items():
-            newly_extracted_features[feature] = DataFrame(data)
+            newly_extracted_features[feature] = data
         return newly_extracted_features
 
-    # TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize...)
+    # TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize, ...)
 
     def __impute(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, IImputer]:
         imputer_object: IImputer = get_imputer(self.imputation)
