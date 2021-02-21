@@ -51,6 +51,7 @@ class Trainer():
         # extract features
         pipeline_data = self.__get_extracted_features(pipeline_data)
 
+        #TODO better way to split data ? 
         # train-test split
         train_data = pipeline_data.iloc[:int(pipeline_data.shape[0]*0.8)]
         train_labels = labels_of_data_windows[:int(len(labels_of_data_windows)*0.8)]
@@ -103,13 +104,26 @@ class Trainer():
         return sliding_window
 
     def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[DataFrame], List[int]]:
+        #TODO CONFIRM WE USE INDEX INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
         data_windows: List[DataFrame] = []
         labels_of_data_windows: List[int] = []
         for sample in samples:
+            timeframe_iterator = iter(sample.timeframes)
+            current_timeframe = next(timeframe_iterator)
+
+            #TODO FOR ÖMER: [1,2],[3,4] is not legal timeframes, use [1,4] instead
+
             # Length of data points for each sensor is same, so we take the first one
             length_of_data_points = len(list(sample.sensor_data_points.values())[0])
             # For each window in this sample, incremented by the sliding step value starting from 0
-            for x in range(0, length_of_data_points, self.sliding_step):
+            for window_offset in range(0, length_of_data_points, self.sliding_step):
+                while window_offset > current_timeframe.end:
+                    try:
+                        current_timeframe = next(timeframe_iterator)
+                    except:
+                        break
+                data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + self.window_size - 1 <= current_timeframe.end
+
                 #  [time][sensor e.g acc_x]
                 data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
                 # For each sensor (sorted so that we always get the same column order)
@@ -117,16 +131,16 @@ class Trainer():
                     # Data points of this sensor (time as index)
                     data_points: List[DataPoint] = sample.sensor_data_points[sensor]
                     # For each data point which is in this data window
-                    for i in range(0, self.window_size):
+                    for datapoint_offset in range(0, self.window_size):
                         # Append the values to this data window (index of values is e.g x in acc_x)
-                        data_point_values = data_points[x+i].values
-                        data_window[i].update({sensor+str(v): data_point_values[v]
+                        data_point_values = data_points[window_offset+datapoint_offset].values
+                        data_window[datapoint_offset].update({sensor+str(v): data_point_values[v]
                                                for v in range(len(data_point_values))})
                 # Append this data window as a DataFrame to the list of all data windows
                 data_windows.append(DataFrame(data_window))
-                labels_of_data_windows.append(label_to_label_code[sample.label])
+                labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else 0)
 
-        # TODO label 0 for the windows not in timeframes
+        print(labels_of_data_windows)
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
@@ -183,6 +197,8 @@ class Trainer():
             newly_extracted_features[feature] = DataFrame(data)
         return newly_extracted_features
 
+
+    #TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize...)
     def __impute(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, IImputer]:
         imputer_object: IImputer = get_imputer(self.imputation)
         imputer_object.fit(train_data)
@@ -205,7 +221,6 @@ class Trainer():
     def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int], label_code_to_label: Dict[int, str]) -> PerformanceMetricsPerLabel:
         prediction = classifier_object.predict(test_data)
         result = {}
-        print(prediction)
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
             if label_code in [str(label_code) for label_code in label_code_to_label]:
                 result[label_code_to_label[int(label_code)]] = PerformanceMetrics(metrics=performance_metric)

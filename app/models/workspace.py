@@ -10,8 +10,8 @@ class Sensor(MongoModel):
 
 
 class Timeframe(MongoModel):
-    start: int
-    end: int
+    start: int = Field(..., description="start index in the sample")
+    end: int = Field(..., description="end index in the sample")
 
 
 class DataPoint(MongoModel):
@@ -21,7 +21,7 @@ class DataPoint(MongoModel):
 
 class Sample(MongoModel):
     label: str
-    #TODO include back timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
+    timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
     sensor_data_points: Dict[str, List[DataPoint]]
 
 

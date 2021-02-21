@@ -29,10 +29,18 @@ async def runtest():
                 "samples": [
                     {
                         "label": "blue",
+                        "timeframes": [{
+                            "start": 0,
+                            "end": 1
+                        }],
                         "sensor_data_points": {
                             "accelerometer": [
                                 {
                                     "values": [1, 2, 3]
+                                    
+                                },
+                                {
+                                    "values": [31, 42, 53]
                                 },
                                 {
                                     "values": [31, 42, 53]
@@ -44,16 +52,26 @@ async def runtest():
                                 },
                                 {
                                     "values": [13, 24, 35]
+                                },
+                                {
+                                    "values": [13, 24, 35]
                                 }
                             ]
                         }
                     },
                     {
                         "label": "red",
+                        "timeframes": [{
+                            "start": 0,
+                            "end":2
+                        }],
                         "sensor_data_points": {
                             "accelerometer": [
                                 {
                                     "values": [90, 60, 90] 
+                                },
+                                {
+                                    "values": [31, 42, 53]
                                 },
                                 {
                                     "values": [31, 42, 53]
@@ -62,6 +80,9 @@ async def runtest():
                             "gyroscope": [
                                 {
                                     "values": [1, 2, 3] 
+                                },
+                                {
+                                    "values": [13, 24, 35]
                                 },
                                 {
                                     "values": [13, 24, 35]

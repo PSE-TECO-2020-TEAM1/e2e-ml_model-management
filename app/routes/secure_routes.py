@@ -53,7 +53,9 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId 
     trainer = Trainer(workspaceId, req.modelName, req.windowSize, req.slidingStep,
                       req.features, req.imputation, req.normalizer, req.classifier, req.hyperparameters)
 
-    training_executor.submit(trainer.train)
+
+    trainer.train()
+    # training_executor.submit(trainer.train)
     # TODO append (workspaceID, trainer) to dict for training progress
     return
 
@@ -62,7 +64,7 @@ async def __update_workspace_data(workspace: Workspace):
         # TODO return what from this api endpoint murat? change to string from json
         last_modified: int = await http_client.get(url="/api/workspaces/" + workspace.id + "/samples", params={"onlyDate": True})
 
-        if last_modified is workspace.workspace_data.last_modified:
+        if last_modified == workspace.workspace_data.last_modified:
             return
 
         labels: List[str] = await http_client.get(url="")  # TODO complete api endpoint
