@@ -21,7 +21,7 @@ class GetParametersRes(MongoModel):
     normalizers: List[Normalization]
     windowSize: Tuple[int, int]
     slidingStep: Tuple[int, int]
-    classifier_selections: List[ClassifierSelection]
+    classifierSelections: List[ClassifierSelection]
 
 
 class OneModelInGetModelsRes(MongoModel):

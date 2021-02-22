@@ -1,11 +1,8 @@
-from starlette.responses import Response
-from app.util.training_parameters import Imputation
-from app.config import get_settings
-from app.training.trainer import Trainer
-from typing import Dict, List, Tuple
 import jwt
 import json
 import uuid
+from starlette.responses import Response
+from typing import Dict, List
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
 from httpx import AsyncClient
@@ -13,11 +10,12 @@ from bson import ObjectId
 
 import app.models.requests as request_models
 import app.models.responses as response_models
-from app.models.ml_model import ML_Model
+from app.config import get_settings
+from app.training.trainer import Trainer
 from app.db import db
-from app.process_pool import training_executor
+from app.training.training_pool import training_pool
 from app.models.mongo_model import OID
-from app.models.workspace import Sample, Workspace, WorkspaceData
+from app.models.workspace import Workspace, WorkspaceData
 
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
     try:
@@ -59,10 +57,10 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    # future = training_executor.submit(trainer.train)
-    # future.add_done_callback(lambda x: print(time.time() - start))
-    trainer.train()
-    print(time.time() - start)
+    future = training_pool.submit(trainer.train)
+    future.add_done_callback(lambda x: print(time.time() - start))
+    # trainer.train()
+    # print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
 
 

@@ -1,14 +1,16 @@
-from app.config import get_settings
-from gridfs import GridFS
+from os import pipe
+import tsfresh
 import pickle
+from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
 from pymongo.database import Database
-import tsfresh
-from pandas import DataFrame, concat
+from pandas import DataFrame
 from tsfresh.feature_extraction import ComprehensiveFCParameters
 from sklearn.metrics import classification_report
+from sklearn.utils import shuffle
 from pymongo import MongoClient
 
+from app.config import get_settings
 from app.models.ml_model import ML_Model, PerformanceMetrics, PerformanceMetricsPerLabel
 from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
@@ -41,6 +43,7 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def train(self):
+        print("--start--")
         self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
@@ -48,15 +51,21 @@ class Trainer():
         workspace_document = self.db.workspaces.find_one({"_id": self.workspace_id})
         workspace = Workspace(**workspace_document, id=workspace_document["_id"])
 
+        print("start split to windows")
+
         # data split to windows
         pipeline_data = self.__get_data_split_to_windows(workspace)
         labels_of_data_windows = pipeline_data.labels_of_data_windows
 
+        print("start feature extraction")
+
         # extract features
         pipeline_data = self.__get_extracted_features(pipeline_data)
 
-        # TODO better way to split data ?
         # train-test split
+        pipeline_data, labels_of_data_windows = shuffle(pipeline_data, labels_of_data_windows)
+        pipeline_data.reset_index(inplace=True, drop=True)
+
         train_data = pipeline_data.iloc[:int(pipeline_data.shape[0]*0.8)]
         train_labels = labels_of_data_windows[:int(len(labels_of_data_windows)*0.8)]
         test_data = pipeline_data.iloc[int(pipeline_data.shape[0]*0.8):]
@@ -65,18 +74,29 @@ class Trainer():
         del pipeline_data
         del labels_of_data_windows
 
+        print("start imputation")
+
         # impute
         (train_data, test_data, imputer_object) = self.__impute(train_data, test_data)
+        
+        print("start normalize")
 
         # normalize
         (train_data, test_data, normalizer_object) = self.__normalize(train_data, test_data)
+        print("start train")
 
         # train
         classifier_object = self.__train(train_data, train_labels)
 
+        print("start performance metrics")
+
         # performance metrics
         performance_metrics = self.__get_performance_metrics(
             classifier_object, test_data, test_labels, workspace.workspace_data.label_code_to_label)
+
+        print("Performance metrics:\n")
+        print(performance_metrics)
+        print("start saving ml model")
 
         # save ml_model
         imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
@@ -88,6 +108,8 @@ class Trainer():
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
         self.db.workspaces.update_one({"_id": workspace.id}, {
                                       "$push": {"ml_models": result.inserted_id}, "$set": {"progress": -1}})
+
+        print("--end--")
 
     def __get_data_split_to_windows(self, workspace: Workspace) -> SlidingWindow:
         workspace_data = workspace.workspace_data
@@ -208,7 +230,8 @@ class Trainer():
                 concatenated_data_windows.append(data_windows[data_window_index][i])
 
         extracted = tsfresh.extract_features(
-            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=True).to_dict(orient="records")
+            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=False).to_dict(orient="records")
+        print(extracted)
 
         for data_window_index in range(len(data_windows)):
             extracted_from_curr_window = extracted[data_window_index]

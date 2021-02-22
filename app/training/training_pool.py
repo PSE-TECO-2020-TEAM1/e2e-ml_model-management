@@ -1,7 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
-class ExecutorManager:
+class TrainingPool:
 
     def __init__(self):
         self.executor: ProcessPoolExecutor
@@ -16,5 +16,4 @@ class ExecutorManager:
         return self.executor.submit(callable)
 
     
-training_executor = ExecutorManager()
-prediction_executor = ExecutorManager()
+training_pool = TrainingPool()

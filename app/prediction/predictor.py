@@ -18,44 +18,35 @@ class Predictor():
         self.features = sorted(features)
         self.label_code_to_label = label_code_to_label
 
-    def predict(self, sensor_data_points: Dict[str, List[DataPoint]]):
-        data = self.__preprocess(sensor_data_points)
-        # TODO
+    #TODO rename
+    def for_process(self, pipe_write, cv):
+        # 
+        # while 1:
+            # wait(cv)
+            # condition check
+            # self.__predict(data)
+        pass
 
-    def __preprocess(self, sensor_data_points: Dict[str, List[DataPoint]]) -> DataFrame:
-        pipeline_data = sensor_data_points
-        pipeline_data = self.__split_to_windows(pipeline_data)
+    def __predict(self):
+        # data = from shared memory queue
+        data_window: DataFrame
+        pipeline_data = self.__preprocess(data_window)
+        self.classifier_object.predict(pipeline_data)
+
+    def __preprocess(self, pipeline_data: DataFrame) -> DataFrame:
         pipeline_data = self.__extract_features(pipeline_data)
         pipeline_data = self.__impute(pipeline_data)
         pipeline_data = self.__normalize(pipeline_data)
         return pipeline_data
 
-    def __split_to_windows(self, sensor_data_points: Dict[str, List[DataPoint]]) -> List[DataFrame]:
-        data_windows: List[DataFrame] = []
-        for x in range(0, len(list(sensor_data_points.values())[0])):
-            data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
-            for sensor in sorted(sensor_data_points):
-                data_points: List[DataPoint] = sensor_data_points[sensor]
-                for i in range(0, self.window_size):
-                        data_point_values = data_points[x+i].values
-                        data_window[i].update({sensor+str(v): data_point_values[v]
-                                               for v in range(len(data_point_values))})
-            data_windows.append(DataFrame(data_window))
-        return data_windows
-
-    def __extract_features(self, data: List[DataFrame]) -> DataFrame:
+    def __extract_features(self, data_window: DataFrame) -> DataFrame:
         settings = {key.value: ComprehensiveFCParameters()[key.value] for key in self.features}
-        extracted_features: List[DataFrame] = []
-        for data_window in data:
-            data_window["id"] = 0
-            result = tsfresh.extract_features(
-                data_window, column_id="id", default_fc_parameters=settings, disable_progressbar=True)
-            result.drop(columns=["id"])
-            extracted_features.append(result)
-        return concat(extracted_features, axis=1)
+        data_window["id"] = 0
+        return tsfresh.extract_features(
+            data_window, column_id="id", default_fc_parameters=settings, disable_progressbar=False)
 
-    def __impute(self, data: DataFrame) -> DataFrame:
-        return DataFrame(self.imputation_object.transform(data), columns=data.columns)
+    def __impute(self, data_window: DataFrame) -> DataFrame:
+        return DataFrame(self.imputation_object.transform(data_window), columns=data_window.columns)
 
-    def __normalize(self, data: DataFrame) -> DataFrame:
-        return DataFrame(self.normalizer_object.transform(data), columns=data.columns)
+    def __normalize(self, data_window: DataFrame) -> DataFrame:
+        return DataFrame(self.normalizer_object.transform(data_window), columns=data_window.columns)
