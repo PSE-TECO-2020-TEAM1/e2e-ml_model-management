@@ -1,5 +1,9 @@
-from os import pipe
-from pandas import DataFrame, concat
+from app.config import get_settings
+import pickle
+from gridfs import GridFS
+from pymongo.mongo_client import MongoClient
+from app.models.mongo_model import OID
+from pandas import DataFrame
 import tsfresh
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 from app.models.workspace import DataPoint
@@ -9,18 +13,29 @@ from typing import Dict, List
 
 
 class Predictor():
-    def __init__(self, window_size: int, sliding_step: int, imputation_object: IImputer, normalizer_object: INormalizer, classifier_object: IClassifier, features: List[Feature], label_code_to_label: Dict[int, str]):
+    def __init__(self, window_size: int, sliding_step: int, imputation_id: OID, normalizer_id: OID, classifier_id: OID, features: List[Feature], label_code_to_label: Dict[int, str]):
         self.window_size = window_size
         self.sliding_step = sliding_step
-        self.imputation_object = imputation_object
-        self.normalizer_object = normalizer_object
-        self.classifier_object = classifier_object
-        self.features = sorted(features)
+        self.imputation_id = imputation_id
+        self.normalizer_id = normalizer_id
+        self.classifier_id = classifier_id
+        self.features = features
         self.label_code_to_label = label_code_to_label
+
+    def __init_objects(self):
+        settings = get_settings()
+        client = MongoClient(settings.client_uri, settings.client_port)
+        db = client[settings.db_name]
+        fs = GridFS(db)
+
+        self.imputer_object = pickle.loads(fs.get(self.imputation_id).read())
+        self.normalizer_object = pickle.loads(fs.get(self.normalizer_id).read())
+        self.classifier_object = pickle.loads(fs.get(self.classifier_id).read())
+        client.close()
 
     #TODO rename
     def for_process(self, pipe_write, cv):
-        # 
+        self.__init_objects()
         # while 1:
             # wait(cv)
             # condition check

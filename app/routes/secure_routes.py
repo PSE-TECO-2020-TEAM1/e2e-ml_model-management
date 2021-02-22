@@ -57,10 +57,10 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    future = training_pool.submit(trainer.train)
-    future.add_done_callback(lambda x: print(time.time() - start))
-    # trainer.train()
-    # print(time.time() - start)
+    # future = training_pool.submit(trainer.train)
+    # future.add_done_callback(lambda x: {print(time.time() - start)})
+    trainer.train()
+    print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
 
 

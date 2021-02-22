@@ -35,7 +35,7 @@ class Trainer():
         self.workspace_id = workspace_id
         self.model_name = model_name
         self.imputation = imputation
-        self.features = features
+        self.sorted_features = sorted(features)
         self.normalizer = normalizer
         self.classifier = classifier
         self.hyperparameters = hyperparameters
@@ -103,11 +103,14 @@ class Trainer():
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
         ml_model = ML_Model(name=self.model_name, workspace_id=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
-                            features=self.features, imputation=self.imputation, imputer_object=imputer_object_db_id, normalization=self.normalizer, normalizer_object=normalizer_object_db_id, classifier=self.classifier, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics)
+                            features=self.sorted_features, imputation=self.imputation, imputer_object=imputer_object_db_id, normalization=self.normalizer, normalizer_object=normalizer_object_db_id, classifier=self.classifier, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
         self.db.workspaces.update_one({"_id": workspace.id}, {
                                       "$push": {"ml_models": result.inserted_id}, "$set": {"progress": -1}})
+
+        # close db connection
+        self.client.close()
 
         print("--end--")
 
@@ -128,7 +131,6 @@ class Trainer():
             samples, workspace_data.label_to_label_code)
 
         inserted_id = self.fs.put(pickle.dumps(data_windows))
-        # TODO insert last_modified to sliding_window
         sliding_window = SlidingWindow(data_windows=inserted_id, labels_of_data_windows=labels_of_data_windows)
 
         result = self.db.sliding_windows.insert_one(sliding_window.dict(exclude={"id"}))
@@ -182,7 +184,7 @@ class Trainer():
         cached_extracted_features: Dict[Feature, List[Dict[str, float]]] = {}
         not_cached_features: List[Feature] = []
         # Sorted so that we always get the same column order
-        for feature in self.features:
+        for feature in self.sorted_features:
             if feature in extracted_features_dict:
                 extracted_feature_doc = self.db.extracted_features.find_one(
                     {"_id": extracted_features_dict[feature]})
@@ -205,16 +207,16 @@ class Trainer():
 
         # Join them together
         number_of_data_windows: int = None
-        sorted_dataframes: List[Dict] = None
-        for feature in sorted(self.features):
+        dataframes: List[Dict] = None
+        for feature in self.sorted_features:
             dict_to_use = cached_extracted_features if feature in cached_extracted_features else newly_extracted_features
             if number_of_data_windows is None:
                 number_of_data_windows = len(dict_to_use[feature])
-                sorted_dataframes = [{} for __range__ in range(number_of_data_windows)]
+                dataframes = [{} for __range__ in range(number_of_data_windows)]
             for i in range(number_of_data_windows):
-                sorted_dataframes[i].update(dict_to_use[feature][i])
+                dataframes[i].update(dict_to_use[feature][i])
 
-        return DataFrame(sorted_dataframes)
+        return DataFrame(dataframes)
 
     def __extractFeatures(self, data_windows: List[List[Dict]], features: List[Feature]) -> Dict[Feature, List[Dict[str, float]]]:
         # TODO parallelize maybe xd
@@ -231,7 +233,6 @@ class Trainer():
 
         extracted = tsfresh.extract_features(
             DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=False).to_dict(orient="records")
-        print(extracted)
 
         for data_window_index in range(len(data_windows)):
             extracted_from_curr_window = extracted[data_window_index]
