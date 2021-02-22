@@ -82,8 +82,8 @@ class Trainer():
         imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
-        ml_model = ML_Model(name=self.model_name, workspace_id=self.workspace_id, window_size=self.window_size, sliding_step=self.sliding_step, label_performance_metrics=performance_metrics,
-                            imputer_object=imputer_object_db_id, normalizer_object=normalizer_object_db_id, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters)
+        ml_model = ML_Model(name=self.model_name, workspace_id=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
+                            features=self.features, imputation=self.imputation, imputer_object=imputer_object_db_id, normalization=self.normalizer, normalizer_object=normalizer_object_db_id, classifier=self.classifier, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
         self.db.workspaces.update_one({"_id": workspace.id}, {
@@ -100,17 +100,15 @@ class Trainer():
 
         sample_docs = list(self.db.samples.find({"_id": {"$in": workspace_data.samples}}))
 
-        import time
-        start = time.time()
         samples = [Sample(**sample_doc, id=sample_doc["_id"]) for sample_doc in sample_docs]
-        print(time.time() - start)
-        
+
         (data_windows, labels_of_data_windows) = self.__split_to_windows(
             samples, workspace_data.label_to_label_code)
 
         inserted_id = self.fs.put(pickle.dumps(data_windows))
+        # TODO insert last_modified to sliding_window
         sliding_window = SlidingWindow(data_windows=inserted_id, labels_of_data_windows=labels_of_data_windows)
-        
+
         result = self.db.sliding_windows.insert_one(sliding_window.dict(exclude={"id"}))
         sliding_window.id = result.inserted_id
         self.db.workspaces.update_one({"_id": workspace.id}, {
@@ -210,7 +208,7 @@ class Trainer():
                 concatenated_data_windows.append(data_windows[data_window_index][i])
 
         extracted = tsfresh.extract_features(
-            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=False).to_dict(orient="records")
+            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, disable_progressbar=True).to_dict(orient="records")
 
         for data_window_index in range(len(data_windows)):
             extracted_from_curr_window = extracted[data_window_index]
@@ -219,7 +217,6 @@ class Trainer():
                 curr_key = curr_extracted_keys[key_index]
                 feature = features[key_index % len(features)]
                 newly_extracted_features[feature][data_window_index][curr_key] = extracted_from_curr_window[curr_key]
-
 
         for feature, data in newly_extracted_features.items():
             newly_extracted_features[feature] = data

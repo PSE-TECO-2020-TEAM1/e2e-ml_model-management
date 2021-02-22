@@ -1,8 +1,11 @@
+from starlette.responses import Response
+from app.util.training_parameters import Imputation
 from app.config import get_settings
 from app.training.trainer import Trainer
 from typing import Dict, List, Tuple
 import jwt
 import json
+import uuid
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
 from httpx import AsyncClient
@@ -46,7 +49,7 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
     if await db.get().ml_models.count_documents({"workspace_id": workspaceId, "name": req.modelName}, limit=1) == 1:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="A trained model with the given name already exists for the user")
 
-    if await db.get().workspaces.find_one_and_update({"_id": workspaceId, "progress": -1}, {"$set": {"progress": 0}}) is None:
+    if await db.get().workspaces.update_one({"_id": workspaceId, "progress": -1}, {"$set": {"progress": 0}}) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="A training for this workspace is already in progress")
 
     # __update_workspace_data(workspaceId)
@@ -56,11 +59,11 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    future = training_executor.submit(trainer.train)
-    future.add_done_callback(lambda x: print(time.time() - start))
-    # trainer.train()
-    # print(time.time() - start)
-    return
+    # future = training_executor.submit(trainer.train)
+    # future.add_done_callback(lambda x: print(time.time() - start))
+    trainer.train()
+    print(time.time() - start)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 async def __update_workspace_data(workspace: Workspace):
@@ -101,21 +104,16 @@ async def get_training_progress(workspaceId: OID, userId=Depends(extract_userId)
 @router.get("/workspaces/{workspaceId}/models", response_model=response_models.GetModelsRes, status_code=status.HTTP_200_OK)
 async def get_models(workspaceId: OID, userId=Depends(extract_userId)):
     workspaceId = ObjectId(workspaceId)
-    models: List[Tuple[OID, str]] = []
 
     workspace_doc = await db.get().workspaces.find_one(
         {"_id": workspaceId, "user_id": userId}, {"_id": False, "ml_models": True})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
 
-    model_ids_of_workspace = workspace_doc["ml_models"]
+    models_of_workspace = db.get().ml_models.find({"_id": {"$in": workspace_doc["ml_models"]}})
+    return response_models.GetModelsRes(models=[response_models.OneModelInGetModelsRes(id=model["_id"], name=model["name"]) async for model in models_of_workspace])
 
-    for model_id in model_ids_of_workspace:
-        model_name = (await db.get().ml_models.find_one({"_id": model_id}, {"_id": False, "name": True}))["name"]
-        models.append((model_id, model_name))
-    return response_models.GetModelsRes(models=models)
-
-
+        
 @router.get("/workspaces/{workspaceId}/models/{modelId}", response_model=response_models.GetModelRes, status_code=status.HTTP_200_OK)
 async def get_model(workspaceId: OID, modelId: OID, userId=Depends(extract_userId)):
     workspaceId = ObjectId(workspaceId)
@@ -124,16 +122,28 @@ async def get_model(workspaceId: OID, modelId: OID, userId=Depends(extract_userI
     if await db.get().workspaces.count_documents({"_id": workspaceId, "user_id": userId}, limit=1) == 0:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
 
-    model_document = db.get().ml_models.find_one({"_id": modelId, "workspace_id": workspaceId})
+    model_document = await db.get().ml_models.find_one({"_id": modelId, "workspace_id": workspaceId})
     if model_document is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No model matched for the user")
 
-    return response_models.GetModelRes(model=ML_Model(**model_document))
+
+    # TODO the models in this response do not have _id field
+    return response_models.GetModelRes(**model_document, id=model_document["_id"])
 
 
-@router.get("/workspaces/{workspaceId}/models/{modelId}/predictionId", response_model=response_models.GetPredictionIdRes, status_code=status.HTTP_200_OK)
+@router.get("/workspaces/{workspaceId}/models/{modelId}/generatePredictionId", response_model=response_models.GetPredictionIdRes, status_code=status.HTTP_200_OK)
 async def get_prediction_id(workspaceId: OID, modelId: OID, userId=Depends(extract_userId)):
-    # TODO
     workspaceId = ObjectId(workspaceId)
     modelId = ObjectId(modelId)
-    pass
+
+    workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId, "user_id": userId}, {"_id": False, "ml_models": True})
+    if workspace_doc is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
+
+    if modelId not in workspace_doc["ml_models"]:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No model matched for the user")
+
+    new_prediction_id = uuid.uuid4().hex
+
+    await db.get().workspaces.update_one({"_id": workspaceId}, {"$set": {"prediction_ids." + new_prediction_id: modelId}})
+    return response_models.GetPredictionIdRes(predictionId=new_prediction_id)

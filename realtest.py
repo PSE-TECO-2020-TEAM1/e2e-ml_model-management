@@ -1,3 +1,4 @@
+from app.models.workspace import Sensor
 import asyncio
 from typing import Dict, Union
 
@@ -25,7 +26,7 @@ async def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
 
-    DATA_POINTS = 10
+    DATA_POINTS = 1000
 
     await client.drop_database("test")
     result = await db.samples.insert_many([{
@@ -38,7 +39,7 @@ async def runtest():
             "accelerometer": fillData(DATA_POINTS),
             "gyroscope": fillData(DATA_POINTS)
         }
-    } for i in range(10)
+    } for i in range(5)
         # {
         #     "label": "red",
         #     "timeframes": [{
@@ -57,6 +58,8 @@ async def runtest():
             "user_id": user_id,
             "ml_models": [],
             "progress": -1,
+            "sensors": [{"name": "Accelerometer", "samplingRate": 50},
+                        {"name": "Gyroscope", "samplingRate": 75}],
             "workspace_data": {
                 "label_to_label_code": {"blue": 1, "red": 2},
                 "label_code_to_label": {"1": "blue", "2": "red"},

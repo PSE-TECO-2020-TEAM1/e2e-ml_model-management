@@ -1,6 +1,8 @@
+from pydantic.fields import Field
+from app.models.workspace import Sensor, Workspace
 from pydantic import BaseModel
 from app.models.mongo_model import MongoModel, OID
-from app.models.ml_model import ML_Model
+from app.models.ml_model import ML_Model, PerformanceMetricsPerLabel
 from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 
@@ -22,17 +24,35 @@ class GetParametersRes(MongoModel):
     classifier_selections: List[ClassifierSelection]
 
 
+class OneModelInGetModelsRes(MongoModel):
+    id: OID
+    name: str
+
+
 class GetModelsRes(MongoModel):
-    models: List[Tuple[OID, str]]
+    models: List[OneModelInGetModelsRes] = Field([])
+
 
 class GetModelRes(MongoModel):
-    model: ML_Model
+    id: OID
+    name: str
+    windowSize: int
+    slidingStep: int
+    features: List[Feature]
+    imputation: Imputation
+    normalization: Normalization
+    classifier: Classifier
+    hyperparameters: Dict[str, Any]
+    labelPerformanceMetrics: PerformanceMetricsPerLabel
+
 
 class GetPredictionConfigRes(MongoModel):
-    pass # TODO
+    sensors: List[Sensor]
+
 
 class GetTrainingProgressRes(MongoModel):
     progress: int
 
+
 class GetPredictionIdRes(MongoModel):
-    pass # TODO
+    predictionId: str

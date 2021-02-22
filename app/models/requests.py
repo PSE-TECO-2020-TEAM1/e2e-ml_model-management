@@ -31,7 +31,7 @@ class PostTrainReq(MongoModel):
         # Check if v is legal configuration, raise an error if so
         config_space = config_spaces[values["classifier"]]
         config = Configuration(config_space, v)
-        # Parse strings to actual types (strings are required by ConfigSpace module ¯\_(ツ)_/¯ )
+        # Parse strings to actual types ( strings are required by the ConfigSpace module ¯\_(ツ)_/¯ )
         for key, value in v.items():
             if value == "None":
                 v[key] = None
@@ -41,8 +41,7 @@ class PostTrainReq(MongoModel):
                 v[key] = False
         return config
 
-class GetPredictionConfigReq(MongoModel):
-    predictionId: str
 
 class SubmitDataReq(MongoModel):
     predictionId: str
+    #TODO fill here with actual data xd

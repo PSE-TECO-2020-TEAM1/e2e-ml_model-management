@@ -24,7 +24,7 @@ class Sample(MongoModel):
     sensor_data_points: Dict[str, List[DataPoint]]
 
 class WorkspaceData(MongoModel):
-    last_modified: int = Field(..., description="Unix Timestamp")
+    # TODO add this: last_modified: int = Field(..., description="Unix Timestamp")
     label_to_label_code: Dict[str, int] = Field(..., description="label -> identifier_number")
     label_code_to_label: Dict[int, str] = Field(..., description="identifier_number -> label")
     samples: List[OID]
