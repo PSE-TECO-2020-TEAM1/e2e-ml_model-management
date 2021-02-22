@@ -1,3 +1,4 @@
+from app.config import get_settings
 from app.training.trainer import Trainer
 from typing import Dict, List, Tuple
 import jwt
@@ -11,14 +12,13 @@ import app.models.requests as request_models
 import app.models.responses as response_models
 from app.models.ml_model import ML_Model
 from app.db import db
-from app.process_pool import training_executor, prediction_executor
+from app.process_pool import training_executor
 from app.models.mongo_model import OID
 from app.models.workspace import Sample, Workspace, WorkspaceData
 
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
     try:
-        # TODO ENV key
-        decoded = jwt.decode(jwt=Authorization.split()[1], key="sabahci_kahvesi", algorithms=["HS256"])
+        decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
         if "exp" not in decoded:
             raise jwt.ExpiredSignatureError
         return ObjectId(decoded["userId"])
@@ -49,7 +49,6 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
     if await db.get().workspaces.find_one_and_update({"_id": workspaceId, "progress": -1}, {"$set": {"progress": 0}}) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="A training for this workspace is already in progress")
 
-    # TODO change update workspace
     # __update_workspace_data(workspaceId)
 
     trainer = Trainer(workspaceId, req.modelName, req.windowSize, req.slidingStep,
@@ -57,10 +56,10 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    # future = training_executor.submit(trainer.train)
-    # future.add_done_callback(lambda x: print(time.time() - start))
-    trainer.train()
-    print(time.time() - start)
+    future = training_executor.submit(trainer.train)
+    future.add_done_callback(lambda x: print(time.time() - start))
+    # trainer.train()
+    # print(time.time() - start)
     return
 
 
@@ -87,7 +86,6 @@ async def __update_workspace_data(workspace: Workspace):
 
 @router.get("/workspaces/{workspaceId}/trainingProgress", response_model=response_models.GetTrainingProgressRes, status_code=status.HTTP_200_OK)
 async def get_training_progress(workspaceId: OID, userId=Depends(extract_userId)):
-    # TODO
     workspaceId = ObjectId(workspaceId)
 
     workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId}, {"_id": False, "progress": True})

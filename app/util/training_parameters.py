@@ -1,6 +1,5 @@
 from enum import Enum
 
-#TODO lowercase all ???
 class Imputation(str, Enum):
     MEAN_IMPUTATION = "mean_imputation"
     ZERO_INTERPOLATION = "zero_interpolation"

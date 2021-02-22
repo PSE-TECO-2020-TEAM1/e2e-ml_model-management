@@ -1,3 +1,4 @@
+from app.config import get_settings
 from gridfs import GridFS
 import pickle
 from typing import Any, Dict, List, Tuple
@@ -26,6 +27,7 @@ class Trainer():
         self.client: MongoClient
         self.db: Database
         self.fs: GridFS
+        self.settings = get_settings()
 
         self.progress: int = 0  # percentage
         self.workspace_id = workspace_id
@@ -39,9 +41,8 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def train(self):
-        # TODO database client in env
-        self.client = MongoClient("mongodb://0.0.0.0/", 27017)
-        self.db = self.client["test"]
+        self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
+        self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
 
         workspace_document = self.db.workspaces.find_one({"_id": self.workspace_id})

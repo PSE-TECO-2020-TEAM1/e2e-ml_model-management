@@ -16,6 +16,9 @@ async def get_parameters():
         features=[f for f in Feature],
         imputers=[i for i in Imputation],
         normalizers=[n for n in Normalization],
+        # TODO max values of window size and sliding step?
+        window_size=(4, 500),
+        sliding_step=(1, 250),
         classifier_selections=get_classifiers_with_hyperparameters()
     )
     return response

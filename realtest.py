@@ -25,7 +25,7 @@ async def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
 
-    DATA_POINTS = 1000000
+    DATA_POINTS = 10
 
     await client.drop_database("test")
     result = await db.samples.insert_many([{

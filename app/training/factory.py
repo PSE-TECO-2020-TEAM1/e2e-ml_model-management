@@ -19,7 +19,7 @@ ImputerDict: Dict[Imputation, Callable[[], IImputer]] = {
     Imputation.LINEAR_INTERPOLATION: lambda: InterpolationImputer(missing_values=numpy.nan, strategy="linear"),
     Imputation.QUADRATIC_INTERPOLATION: lambda: InterpolationImputer(missing_values=numpy.nan, strategy="quadratic"),
     Imputation.CUBIC_INTERPOLATION: lambda: InterpolationImputer(missing_values=numpy.nan, strategy="cubic")
-    # TODO
+    # TODO add these imputations
     # Imputation.MOVING_AVERAGE_IMPUTATION: ,
     # Imputation.LAST_OBSERVATION_CARRIED_FORWARD_IMPUTATION:
 }
@@ -48,9 +48,6 @@ ClassifierDict: Dict[Classifier, Callable[[], IClassifier]] = {
     Classifier.RANDOM_FOREST_CLASSIFIER: lambda hyperparameters: RandomForestClassifier(**hyperparameters),
     Classifier.KNEIGHBORS_CLASSIFIER: lambda hyperparameters: KNeighborsClassifier(**hyperparameters)
 }
-
-# TODO hyperparameters here ??
-
 
 def get_classifier(classifier: Classifier, hyperparameters: Dict[str, Any]) -> IClassifier:
     return ClassifierDict[classifier](hyperparameters)

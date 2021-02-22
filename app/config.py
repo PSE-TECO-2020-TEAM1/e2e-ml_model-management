@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     db_name: str
     host: str
     port: int
+    secret_key: str
 
     class Config:
         env_file = ".env"

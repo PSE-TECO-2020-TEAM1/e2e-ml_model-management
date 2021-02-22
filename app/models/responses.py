@@ -14,12 +14,11 @@ class ClassifierSelection(MongoModel):
 
 
 class GetParametersRes(MongoModel):
-    # TODO sliding window min max constraints here ?
     features: List[Feature]
     imputers: List[Imputation]
     normalizers: List[Normalization]
-    # windowSize: Tuple[int, int]
-    # slidingStep: Tuple[int, int]
+    windowSize: Tuple[int, int]
+    slidingStep: Tuple[int, int]
     classifier_selections: List[ClassifierSelection]
 
 
