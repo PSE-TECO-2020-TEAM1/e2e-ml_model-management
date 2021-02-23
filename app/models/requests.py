@@ -3,12 +3,12 @@ from typing import Any, Dict, List
 from pydantic.fields import Field
 
 from app.models.mongo_model import OID, MongoModel
-from app.models.workspace import Sensor
+from app.models.workspace import DataPoint, Sensor
 from app.util.classifier_config_spaces import config_spaces
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
 from ConfigSpace import Configuration
-from pydantic import BaseModel, validator
+from pydantic import validator
 
 
 class PostCreateWorkspaceReq(MongoModel):
@@ -41,7 +41,7 @@ class PostTrainReq(MongoModel):
                 v[key] = False
         return config
 
-
-class SubmitDataReq(MongoModel):
+class PostSubmitDataReq(MongoModel):
     predictionId: str
-    #TODO fill here with actual data xd
+    dataPointCount: int #TODO we can also len first value in data. Should we also check if the values in data has the same len ??
+    data: Dict[str, List[DataPoint]]

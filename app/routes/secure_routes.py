@@ -145,3 +145,4 @@ async def get_prediction_id(workspaceId: OID, modelId: OID, userId=Depends(extra
 
     await db.get().workspaces.update_one({"_id": workspaceId}, {"$set": {"prediction_ids." + new_prediction_id: modelId}})
     return response_models.GetPredictionIdRes(predictionId=new_prediction_id)
+

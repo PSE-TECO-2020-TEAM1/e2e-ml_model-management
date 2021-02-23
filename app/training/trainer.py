@@ -94,8 +94,6 @@ class Trainer():
         performance_metrics = self.__get_performance_metrics(
             classifier_object, test_data, test_labels, workspace.workspace_data.label_code_to_label)
 
-        print("Performance metrics:\n")
-        print(performance_metrics)
         print("start saving ml model")
 
         # save ml_model
@@ -220,7 +218,7 @@ class Trainer():
 
     def __extractFeatures(self, data_windows: List[List[Dict]], features: List[Feature]) -> Dict[Feature, List[Dict[str, float]]]:
         # TODO parallelize maybe xd
-        settings = {key.value: ComprehensiveFCParameters()[key.value] for key in features}
+        settings = {key: ComprehensiveFCParameters()[key] for key in features}
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
             f: [{} for _range_ in range(len(data_windows))] for f in features}
 

@@ -11,8 +11,6 @@ class Settings(BaseSettings):
     port: int
     secret_key: str
 
-    SIZE_OF_QUEUE_IN_DATA_WINDOWS = 100000
-
     class Config:
         env_file = ".env"
 
