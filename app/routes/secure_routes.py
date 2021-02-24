@@ -56,10 +56,10 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    # future = training_pool.submit(trainer.train)
-    # future.add_done_callback(lambda x: {print(time.time() - start)})
-    trainer.train(samples=None) #TODO change from none to result of fetch
-    print(time.time() - start)
+    future = training_pool.submit(trainer.train, (None))
+    future.add_done_callback(lambda x: {print(time.time() - start)})
+    # trainer.train(samples=None) #TODO change from none to result of fetch
+    # print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
 
 
@@ -73,11 +73,9 @@ async def __fetch_workspace_samples(workspace: Workspace) -> List[SampleInJson]:
         labels: List[str] = [label["name"] for label in json.loads(await http_client.get(url="").json())]  # TODO complete api endpoint
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
         label_to_label_code["Other"] = "0"
-        label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
-        label_code_to_label["0"] = "Other"
 
         await db.get().workspaces.update_one({"_id": workspace.id}, {
-            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code, labelCodeToLabel=label_code_to_label).dict()}})
+            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code).dict()}})
 
         # TODO complete api endpoint
         samples = [SampleInJson(sample) for sample in json.loads(await http_client.get(url="").json())]
@@ -117,8 +115,7 @@ async def get_models(workspaceId: OID, userId=Depends(extract_userId)):
         {"_id": workspaceId, "userId": userId}, {"_id": False, "mlModels": True})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
-    workspace = Workspace(**workspace_doc)
-    models = [MlModel(**model) async for model in db.get().ml_models.find({"_id": {"$in": workspace.mlModels}})]
+    models = [MlModel(**model) async for model in db.get().ml_models.find({"_id": {"$in": workspace_doc["mlModels"]}})]
     return response_models.GetModelsRes(models=[model.dict(include={"id", "name"}) for model in models])
 
         
@@ -133,7 +130,8 @@ async def get_model(workspaceId: OID, modelId: OID, userId=Depends(extract_userI
     model_doc = await db.get().ml_models.find_one({"_id": modelId, "workspaceId": workspaceId})
     if model_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No model matched for the user")
-    return response_models.GetModelRes(MlModel(**model_doc).dict())
+    # Response model masks the unwanted fields
+    return MlModel(**model_doc).dict()
 
 
 @router.get("/workspaces/{workspaceId}/models/{modelId}/generatePredictionId", response_model=response_models.GetPredictionIdRes, status_code=status.HTTP_200_OK)
@@ -144,9 +142,8 @@ async def get_prediction_id(workspaceId: OID, modelId: OID, userId=Depends(extra
     workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId, "userId": userId}, {"_id": False, "mlModels": True})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
-    workspace = Workspace(**workspace_doc)
 
-    if modelId not in workspace.mlModels:
+    if modelId not in workspace_doc["mlModels"]:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No model matched for the user")
 
     new_prediction_id = uuid.uuid4().hex

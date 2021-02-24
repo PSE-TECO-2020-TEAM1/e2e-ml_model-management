@@ -20,7 +20,7 @@ class MlModel(MongoModel):
     workspaceId: OID
     windowSize: int
     slidingStep: int
-    features: List[Feature]
+    sortedFeatures: List[Feature]
     imputation: Imputation
     imputerObject: OID
     normalization: Normalization
@@ -29,3 +29,5 @@ class MlModel(MongoModel):
     classifierObject: OID
     hyperparameters: Dict[str, Any]
     labelPerformanceMetrics: PerformanceMetricsPerLabel
+    columnOrder: List[str]
+    labelCodeToLabel: Dict[str, str]

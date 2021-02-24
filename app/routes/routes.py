@@ -35,12 +35,11 @@ async def get_prediction_config(predictionId: str):
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="The prediction id is not valid")
     workspace = Workspace(**workspace_doc)
-    await prediction_manager.spawn_predictor(
-        prediction_id=predictionId, model_id=workspace.predictionIds[predictionId], label_code_to_label=workspace.workspaceData.labelCodeToLabel)
+    await prediction_manager.spawn_predictor(prediction_id=predictionId, model_id=workspace.predictionIds[predictionId])
     return response_models.GetPredictionConfigRes(sensors=workspace.sensors)
 
 
 @router.post("/submitData", status_code=status.HTTP_200_OK)
 async def post_submit_data(req: request_models.PostSubmitDataReq):
     # TODO here properly with checks etc...
-    prediction_manager.submit_data(req.predictionId, req.data)
+    prediction_manager.submit_data(req.predictionId, req.dataPointCount, req.data)

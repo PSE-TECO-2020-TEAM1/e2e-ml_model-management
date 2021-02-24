@@ -38,7 +38,7 @@ class GetModelRes(MongoModel):
     name: str
     windowSize: int
     slidingStep: int
-    features: List[Feature]
+    sortedFeatures: List[Feature]
     imputation: Imputation
     normalization: Normalization
     classifier: Classifier

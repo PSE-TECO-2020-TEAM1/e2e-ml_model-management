@@ -12,8 +12,8 @@ class TrainingPool:
     def shutdown(self):
         self.executor.shutdown()
 
-    def submit(self, callable):
-        return self.executor.submit(callable)
+    def submit(self, callable, args):
+        return self.executor.submit(callable, args)
 
     
 training_pool = TrainingPool()

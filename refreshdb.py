@@ -18,7 +18,7 @@ def fillData(num):
         data_points.append([random.randint(1, 100) for i in range(3)])
     return data_points
 
-DATA_POINTS = 20
+DATA_POINTS = 1000000
 
 def fillDataPoints():
     sensors = ["accelerometer", "gyroscope"]
@@ -31,18 +31,8 @@ def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
     client.drop_database("test")
-    
-    samples_list1 =[{
-        "label": "blue",
-        "dataPointCount": DATA_POINTS,
-        "timeframes": [{
-            "start": 0,
-            "end": DATA_POINTS
-        }],
-        "sensorDataPoints": fillDataPoints()
-    } for i in range(5)]
 
-    samples_list1 += [{
+    samples_list1 = [{
         "label": "red",
         "dataPointCount": DATA_POINTS,
         "timeframes": [{
@@ -50,7 +40,7 @@ def runtest():
             "end": DATA_POINTS
         }],
         "sensorDataPoints": fillDataPoints()
-    } for i in range(5)]
+    }]
 
     samples_list2 =[{
         "label": "blue",
@@ -60,17 +50,7 @@ def runtest():
             "end": DATA_POINTS
         }],
         "sensorDataPoints": fillDataPoints()
-    } for i in range(5)]
-
-    samples_list2 += [{
-        "label": "red",
-        "dataPointCount": DATA_POINTS,
-        "timeframes": [{
-            "start": 0,
-            "end": DATA_POINTS
-        }],
-        "sensorDataPoints": fillDataPoints()
-    } for i in range(5)]
+    }]
     
     db.workspaces.insert_one(
         {
