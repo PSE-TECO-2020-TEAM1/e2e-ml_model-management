@@ -1,3 +1,4 @@
+from pydantic.fields import Field
 from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
 from typing import Any, Dict, List, Optional
 
@@ -13,18 +14,18 @@ class PerformanceMetricsPerLabel(MongoModel):
     metrics_of_labels: Dict[str, PerformanceMetrics]
 
 
-class ML_Model(MongoModel):
-    id: Optional[OID] = None
+class MlModel(MongoModel):
+    id: OID = Field(None, alias="_id")
     name: str
-    workspace_id: OID
+    workspaceId: OID
     windowSize: int
     slidingStep: int
     features: List[Feature]
     imputation: Imputation
-    imputer_object: OID
+    imputerObject: OID
     normalization: Normalization
-    normalizer_object: OID
+    normalizerObject: OID
     classifier: Classifier
-    classifier_object: OID
+    classifierObject: OID
     hyperparameters: Dict[str, Any]
     labelPerformanceMetrics: PerformanceMetricsPerLabel

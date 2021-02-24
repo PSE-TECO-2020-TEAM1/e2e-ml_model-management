@@ -1,3 +1,4 @@
+from app.models.workspace import Workspace
 from app.models.mongo_model import OID
 from fastapi import APIRouter, status
 from fastapi.exceptions import HTTPException
@@ -30,13 +31,13 @@ async def get_parameters():
 @router.get("/predictionConfig", response_model=response_models.GetPredictionConfigRes, status_code=HTTP_200_OK)
 async def get_prediction_config(predictionId: str):
     # TODO
-    workspace_doc = await db.get().workspaces.find_one({"prediction_ids." + predictionId: {"$exists": True}})
+    workspace_doc = await db.get().workspaces.find_one({"predictionIds." + predictionId: {"$exists": True}})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="The prediction id is not valid")
-    # TODO BETTER WAY?
+    workspace = Workspace(**workspace_doc)
     await prediction_manager.spawn_predictor(
-        prediction_id=predictionId, model_id=workspace_doc["prediction_ids"][predictionId], label_code_to_label=workspace_doc["workspace_data"]["label_code_to_label"])
-    return response_models.GetPredictionConfigRes(sensors=workspace_doc["sensors"])
+        prediction_id=predictionId, model_id=workspace.predictionIds[predictionId], label_code_to_label=workspace.workspaceData.labelCodeToLabel)
+    return response_models.GetPredictionConfigRes(sensors=workspace.sensors)
 
 
 @router.post("/submitData", status_code=status.HTTP_200_OK)

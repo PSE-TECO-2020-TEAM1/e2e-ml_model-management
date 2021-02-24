@@ -1,3 +1,4 @@
+from app.models.ml_model import MlModel
 import tsfresh
 import pickle
 from multiprocessing.synchronize import Semaphore as SemaphoreType
@@ -8,32 +9,29 @@ from pandas import DataFrame
 from typing import Dict, List
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 
-from app.models.workspace import DataPoint
 from app.models.mongo_model import OID
 from app.config import get_settings
-from app.util.training_parameters import Feature
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
 
 
 class Predictor():
-    def __init__(self, window_size: int, sliding_step: int, imputation_id: OID, normalizer_id: OID, classifier_id: OID, features: List[Feature], label_code_to_label: Dict[int, str]):
-        self.window_size = window_size
-        self.sliding_step = sliding_step
-        self.imputation_id = imputation_id
-        self.normalizer_id = normalizer_id
-        self.classifier_id = classifier_id
-        self.features = features
-        self.label_code_to_label = label_code_to_label
+    def __init__(self, model_id: OID):
+        self.model_id = model_id
 
     def __init_objects(self):
         settings = get_settings()
         client = MongoClient(settings.client_uri, settings.client_port)
         db = client[settings.db_name]
         fs = GridFS(db)
+        model = MlModel(**db.get().ml_models.find_one({"_id": self.model_id}))
 
-        self.imputation_object: IImputer = pickle.loads(fs.get(self.imputation_id).read())
-        self.normalizer_object: INormalizer = pickle.loads(fs.get(self.normalizer_id).read())
-        self.classifier_object: IClassifier = pickle.loads(fs.get(self.classifier_id).read())
+        self.window_size = model.windowSize
+        self.sliding_step = model.slidingStep
+        self.features = model.features
+
+        self.imputation_object: IImputer = pickle.loads(fs.get(model.imputation_id).read())
+        self.normalizer_object: INormalizer = pickle.loads(fs.get(model.normalizer_id).read())
+        self.classifier_object: IClassifier = pickle.loads(fs.get(model.classifier_id).read())
         client.close()
 
     #TODO rename
@@ -44,7 +42,7 @@ class Predictor():
                 print("Couldn't acquire semaphore :(") #TODO delet this
                 pass
             # TODO implement the actual logic here
-            data_window: Dict[str, List[DataPoint]] = predictor_end.recv()
+            data_window: Dict[str, List[List[float]]] = predictor_end.recv()
             data_point_count = 4 #TODO replace 2 with the number of datapoints (maybe pass from the request via pipe?)
             dataframe_data = [{} for __range__ in range(data_point_count)]
             for sensor, sensor_data_points in data_window.items():

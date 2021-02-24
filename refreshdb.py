@@ -1,91 +1,90 @@
 import asyncio
+import pickle
 
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
+from gridfs import GridFS
 import random
+
+from pymongo.mongo_client import MongoClient
+
+uri = 'mongodb://0.0.0.0/'
+client = MongoClient(uri, 27017)
+db = client.test
+fs = GridFS(db)
 
 def fillData(num):
     data_points = []
     for i in range(num):
-        data_points.append({"values": [random.randint(1, 100) for i in range(3)]})
+        data_points.append([random.randint(1, 100) for i in range(3)])
     return data_points
 
+DATA_POINTS = 20
 
-async def runtest():
-    uri = 'mongodb://0.0.0.0/'
-    client = AsyncIOMotorClient(uri, 27017)
-    db = client.test
+def fillDataPoints():
+    sensors = ["accelerometer", "gyroscope"]
+    object = {}
+    for sensor in sensors:
+        object[sensor] = fillData(DATA_POINTS)
+    return fs.put(pickle.dumps(object))
 
+def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
-
-    DATA_POINTS = 20
-
-    await client.drop_database("test")
-    samples_list =[{
+    client.drop_database("test")
+    
+    samples_list1 =[{
         "label": "blue",
+        "dataPointCount": DATA_POINTS,
         "timeframes": [{
             "start": 0,
             "end": DATA_POINTS
         }],
-        "sensor_data_points": {
-            "accelerometer": fillData(DATA_POINTS),
-            "gyroscope": fillData(DATA_POINTS)
-        }
+        "sensorDataPoints": fillDataPoints()
     } for i in range(5)]
 
-    samples_list += [{
+    samples_list1 += [{
         "label": "red",
+        "dataPointCount": DATA_POINTS,
         "timeframes": [{
             "start": 0,
             "end": DATA_POINTS
         }],
-        "sensor_data_points": {
-            "accelerometer": fillData(DATA_POINTS),
-            "gyroscope": fillData(DATA_POINTS)
-        }
+        "sensorDataPoints": fillDataPoints()
     } for i in range(5)]
 
     samples_list2 =[{
         "label": "blue",
+        "dataPointCount": DATA_POINTS,
         "timeframes": [{
             "start": 0,
             "end": DATA_POINTS
         }],
-        "sensor_data_points": {
-            "accelerometer": fillData(DATA_POINTS),
-            "gyroscope": fillData(DATA_POINTS)
-        }
+        "sensorDataPoints": fillDataPoints()
     } for i in range(5)]
 
     samples_list2 += [{
         "label": "red",
+        "dataPointCount": DATA_POINTS,
         "timeframes": [{
             "start": 0,
             "end": DATA_POINTS
         }],
-        "sensor_data_points": {
-            "accelerometer": fillData(DATA_POINTS),
-            "gyroscope": fillData(DATA_POINTS)
-        }
+        "sensorDataPoints": fillDataPoints()
     } for i in range(5)]
     
-    result1 = await db.samples.insert_many(samples_list)
-    result2 = await db.samples.insert_many(samples_list2)
-
-    await db.workspaces.insert_one(
+    db.workspaces.insert_one(
         {
             "_id": workspace_id,
-            "user_id": user_id,
-            "ml_models": [],
+            "userId": user_id,
+            "mlModels": [],
             "progress": -1,
             "sensors": [{"name": "Accelerometer", "samplingRate": 50},
                         {"name": "Gyroscope", "samplingRate": 75}],
-            "workspace_data": {
-                "label_to_label_code": {"blue": 1, "red": 2},
-                "label_code_to_label": {"1": "blue", "2": "red"},
-                "sliding_windows": {},
-                "samples": result1.inserted_ids
+            "workspaceData": {
+                "labelToLabelCode": {"blue": 1, "red": 2},
+                "labelCodeToLabel": {"1": "blue", "2": "red"},
+                "slidingWindows": {},
+                "samples": samples_list1
             }
         }
     )
@@ -93,23 +92,21 @@ async def runtest():
     workspace_id2 = ObjectId('666f6f2d6261722d71757579')
     user_id = ObjectId('666f6f2d6261722d71757578')
 
-    await db.workspaces.insert_one(
+    db.workspaces.insert_one(
         {
             "_id": workspace_id2,
-            "user_id": user_id,
-            "ml_models": [],
+            "userId": user_id,
+            "mlModels": [],
             "progress": -1,
             "sensors": [{"name": "Accelerometer", "samplingRate": 50},
                         {"name": "Gyroscope", "samplingRate": 75}],
-            "workspace_data": {
-                "label_to_label_code": {"blue": 1, "red": 2},
-                "label_code_to_label": {"1": "blue", "2": "red"},
-                "sliding_windows": {},
-                "samples": result2.inserted_ids
+            "workspaceData": {
+                "labelToLabelCode": {"blue": 1, "red": 2},
+                "labelCodeToLabel": {"1": "blue", "2": "red"},
+                "slidingWindows": {},
+                "samples": samples_list2
             }
         }
     )
 
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(runtest())
+runtest()

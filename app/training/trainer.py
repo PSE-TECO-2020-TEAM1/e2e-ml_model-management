@@ -1,4 +1,3 @@
-from os import pipe
 import tsfresh
 import pickle
 from gridfs import GridFS
@@ -11,10 +10,10 @@ from sklearn.utils import shuffle
 from pymongo import MongoClient
 
 from app.config import get_settings
-from app.models.ml_model import ML_Model, PerformanceMetrics, PerformanceMetricsPerLabel
+from app.models.ml_model import MlModel, PerformanceMetrics, PerformanceMetricsPerLabel
 from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
-from app.models.workspace import DataPoint, Sample, Workspace
+from app.models.workspace import Sample, SampleInJson, Workspace
 from app.training.factory import get_classifier, get_imputer, get_normalizer
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
 from app.util.training_parameters import (Classifier, Feature, Imputation,
@@ -42,20 +41,28 @@ class Trainer():
         self.window_size = window_size
         self.sliding_step = sliding_step
 
-    def train(self):
+    def train(self, samples: List[SampleInJson]):
         print("--start--")
         self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
 
-        workspace_document = self.db.workspaces.find_one({"_id": self.workspace_id})
-        workspace = Workspace(**workspace_document, id=workspace_document["_id"])
+        workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
+
+        if samples is not None:
+            samples_to_insert: List[Sample] = []
+            for sample in samples:
+                result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
+                sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
+                                          dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
+                samples.append(sample_to_insert)
+            self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"samples": samples_to_insert}})
 
         print("start split to windows")
 
         # data split to windows
         pipeline_data = self.__get_data_split_to_windows(workspace)
-        labels_of_data_windows = pipeline_data.labels_of_data_windows
+        labels_of_data_windows = pipeline_data.labelsOfDataWindows
 
         print("start feature extraction")
 
@@ -78,7 +85,7 @@ class Trainer():
 
         # impute
         (train_data, test_data, imputer_object) = self.__impute(train_data, test_data)
-        
+
         print("start normalize")
 
         # normalize
@@ -92,7 +99,7 @@ class Trainer():
 
         # performance metrics
         performance_metrics = self.__get_performance_metrics(
-            classifier_object, test_data, test_labels, workspace.workspace_data.label_code_to_label)
+            classifier_object, test_data, test_labels, workspace.workspaceData.labelCodeToLabel)
 
         print("start saving ml model")
 
@@ -100,12 +107,12 @@ class Trainer():
         imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
-        ml_model = ML_Model(name=self.model_name, workspace_id=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
-                            features=self.sorted_features, imputation=self.imputation, imputer_object=imputer_object_db_id, normalization=self.normalizer, normalizer_object=normalizer_object_db_id, classifier=self.classifier, classifier_object=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics)
+        ml_model = MlModel(name=self.model_name, workspaceId=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
+                           features=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id, normalization=self.normalizer, normalizerObject=normalizer_object_db_id, classifier=self.classifier, classifierObject=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude={"id"}))
         self.db.workspaces.update_one({"_id": workspace.id}, {
-                                      "$push": {"ml_models": result.inserted_id}, "$set": {"progress": -1}})
+                                      "$push": {"mlModels": result.inserted_id}, "$set": {"progress": -1}})
 
         # close db connection
         self.client.close()
@@ -113,28 +120,23 @@ class Trainer():
         print("--end--")
 
     def __get_data_split_to_windows(self, workspace: Workspace) -> SlidingWindow:
-        workspace_data = workspace.workspace_data
+        workspace_data = workspace.workspaceData
         # If already cached, retrieve from the database
-        if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.sliding_windows:
-            data_windows_id = workspace_data.sliding_windows[str(self.window_size) + "_" + str(self.sliding_step)]
-            sliding_window_document = self.db.sliding_windows.find_one({"_id": data_windows_id})
-            return SlidingWindow(**sliding_window_document, id=sliding_window_document["_id"])
-        # Split yourself and cache otherwise
+        if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.slidingWindows:
+            data_windows_id = workspace_data.slidingWindows[str(self.window_size) + "_" + str(self.sliding_step)]
+            return SlidingWindow(**self.db.sliding_windows.find_one({"_id": data_windows_id}))
 
-        sample_docs = list(self.db.samples.find({"_id": {"$in": workspace_data.samples}}))
-
-        samples = [Sample(**sample_doc, id=sample_doc["_id"]) for sample_doc in sample_docs]
-
+        # Otherwise split yourself and cache
         (data_windows, labels_of_data_windows) = self.__split_to_windows(
-            samples, workspace_data.label_to_label_code)
+            workspace_data.samples, workspace_data.labelToLabelCode)
 
         inserted_id = self.fs.put(pickle.dumps(data_windows))
-        sliding_window = SlidingWindow(data_windows=inserted_id, labels_of_data_windows=labels_of_data_windows)
+        sliding_window = SlidingWindow(dataWindows=inserted_id, labelsOfDataWindows=labels_of_data_windows)
 
         result = self.db.sliding_windows.insert_one(sliding_window.dict(exclude={"id"}))
         sliding_window.id = result.inserted_id
         self.db.workspaces.update_one({"_id": workspace.id}, {
-            "$set": {"workspace_data.sliding_windows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
+            "$set": {"workspaceData.slidingWindows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
         return sliding_window
 
     def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[List[Dict]], List[int]]:
@@ -147,10 +149,9 @@ class Trainer():
 
             # TODO FOR ÖMER: [1,2],[3,4] is not legal timeframes, use [1,4] instead
 
-            # Length of data points for each sensor is same, so we take the first one
-            length_of_data_points = len(list(sample.sensor_data_points.values())[0])
+            sensor_data_points: Dict[str, List[List[float]]] = pickle.loads(self.fs.get(sample.sensorDataPoints).read())
             # For each window in this sample, incremented by the sliding step value starting from 0
-            for window_offset in range(0, length_of_data_points - self.window_size + 1, self.sliding_step):
+            for window_offset in range(0, sample.dataPointCount - self.window_size + 1, self.sliding_step):
                 while window_offset > current_timeframe.end:
                     try:
                         current_timeframe = next(timeframe_iterator)
@@ -162,15 +163,15 @@ class Trainer():
                 #  [time][sensor e.g acc_x]
                 data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
                 # For each sensor (sorted so that we always get the same column order)
-                for sensor in sorted(sample.sensor_data_points):
+                for sensor in sorted(sensor_data_points):
                     # Data points of this sensor (time as index)
-                    data_points: List[DataPoint] = sample.sensor_data_points[sensor]
+                    data_points = sensor_data_points[sensor]
                     # For each data point which is in this data window
                     for datapoint_offset in range(0, self.window_size):
                         # Append the values to this data window (index of values is e.g x in acc_x)
-                        data_point_values = data_points[window_offset+datapoint_offset].values
-                        data_window[datapoint_offset].update({sensor+str(v): data_point_values[v]
-                                                              for v in range(len(data_point_values))})
+                        data_point = data_points[window_offset+datapoint_offset]
+                        data_window[datapoint_offset].update({sensor+str(v): data_point[v]
+                                                              for v in range(len(data_point))})
                 # Append this data window as a DataFrame to the list of all data windows
                 data_windows.append(data_window)
                 labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else 0)
@@ -178,15 +179,16 @@ class Trainer():
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
-        extracted_features_dict = sliding_window.extracted_features
+        extracted_features_dict = sliding_window.extractedFeatures
+        print(extracted_features_dict)
         cached_extracted_features: Dict[Feature, List[Dict[str, float]]] = {}
         not_cached_features: List[Feature] = []
         # Sorted so that we always get the same column order
         for feature in self.sorted_features:
             if feature in extracted_features_dict:
-                extracted_feature_doc = self.db.extracted_features.find_one(
-                    {"_id": extracted_features_dict[feature]})
-                cached_extracted_features[feature] = pickle.loads(self.fs.get(extracted_feature_doc["data"]).read())
+                extracted_feature = ExtractedFeature(**self.db.extracted_features.find_one(
+                    {"_id": extracted_features_dict[feature]}))
+                cached_extracted_features[feature] = pickle.loads(self.fs.get(extracted_feature.data).read())
             else:
                 not_cached_features.append(feature)
 
@@ -194,14 +196,14 @@ class Trainer():
 
         if not_cached_features:
             # We have to load from the database for the case where sliding windows are cached
-            data_windows = pickle.loads(self.fs.get(sliding_window.data_windows).read())
+            data_windows = pickle.loads(self.fs.get(sliding_window.dataWindows).read())
             newly_extracted_features = self.__extractFeatures(data_windows, not_cached_features)
             for feature in newly_extracted_features:
                 inserted_id = self.fs.put(pickle.dumps(newly_extracted_features[feature]))
                 extracted_feature = ExtractedFeature(data=inserted_id)
                 result = self.db.extracted_features.insert_one(extracted_feature.dict(exclude={"id"}))
                 self.db.sliding_windows.update_one({"_id": sliding_window.id},
-                                                   {"$set": {"extracted_features." + feature.value: result.inserted_id}})
+                                                   {"$set": {"extractedFeatures." + feature.value: result.inserted_id}})
 
         # Join them together
         number_of_data_windows: int = None

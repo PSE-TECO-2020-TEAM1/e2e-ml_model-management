@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.models.mongo_model import OID, MongoModel
 from pydantic import Field
@@ -14,27 +14,41 @@ class Timeframe(MongoModel):
     end: int = Field(..., description="end index in the sample")
 
 
-class DataPoint(MongoModel):
-    values: List[float]
-
+class SampleInJson(MongoModel):
+    """
+    The only difference from the Sample class is the sensorDataPoints field and the id. We receive the sample over network as
+    normal dictionary, but save the sample in database after the validation as pickled dictionary. 
+    """
+    id: OID
+    label: str
+    timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
+    # TODO camelCase this
+    dataPointCount: int
+    # Don't complete the type! We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
+    sensorDataPoints: Dict[str, List[Any]] = Field(..., description="Dictionary that maps sensors to their data points")
 
 class Sample(MongoModel):
     label: str
     timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    sensor_data_points: Dict[str, List[DataPoint]]
+    # TODO camelCase this
+    dataPointCount: int
+    sensorDataPoints: OID = Field(...,
+                                  description="Reference to pickled dictionary that maps sensors to their data points")
+
 
 class WorkspaceData(MongoModel):
     # TODO add this: last_modified: int = Field(..., description="Unix Timestamp")
-    label_to_label_code: Dict[str, int] = Field(..., description="label -> identifier_number")
-    label_code_to_label: Dict[int, str] = Field(..., description="identifier_number -> label")
-    samples: List[OID]
-    sliding_windows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
-    
+    labelToLabelCode: Dict[str, int] = Field(..., description="label -> identifier_number")
+    labelCodeToLabel: Dict[int, str] = Field(..., description="identifier_number -> label")
+    samples: List[Sample] = Field([], description="samples are set during the training")
+    slidingWindows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
+
+
 class Workspace(MongoModel):
-    id: Optional[OID]
-    user_id: OID
+    id: OID = Field(None, alias="_id")
+    userId: OID
     progress: int = Field(-1, description="progress of current training in percentage, -1 if there is no training in progress")
-    prediction_ids: Dict[str, OID] = Field({}, description="predictionId -> modelId")
+    predictionIds: Dict[str, OID] = Field({}, description="predictionId -> modelId")
     sensors: List[Sensor]
-    workspace_data: WorkspaceData = Field(None, description="Data samples of the workspace (must be fetched if None)")
-    ml_models: List[OID] = Field([], description="References to the machine learning models of the workspace")
+    workspaceData: WorkspaceData = Field(None, description="Data samples of the workspace (must be fetched if None)")
+    mlModels: List[OID] = Field([], description="References to the machine learning models of the workspace")

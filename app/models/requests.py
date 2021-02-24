@@ -1,20 +1,18 @@
 from typing import Any, Dict, List
-
+from ConfigSpace import Configuration
+from pydantic import validator
 from pydantic.fields import Field
 
 from app.models.mongo_model import OID, MongoModel
-from app.models.workspace import DataPoint, Sensor
+from app.models.workspace import Sensor
 from app.util.classifier_config_spaces import config_spaces
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
-from ConfigSpace import Configuration
-from pydantic import validator
 
 
 class PostCreateWorkspaceReq(MongoModel):
     workspaceId: OID
     sensors: List[Sensor]
-
 
 class PostTrainReq(MongoModel):
     modelName: str
@@ -43,5 +41,6 @@ class PostTrainReq(MongoModel):
 
 class PostSubmitDataReq(MongoModel):
     predictionId: str
-    dataPointCount: int #TODO we can also len first value in data. Should we also check if the values in data has the same len ??
-    data: Dict[str, List[DataPoint]]
+    dataPointCount: int
+    # Don't complete the type! We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
+    data: Dict[str, List[Any]]

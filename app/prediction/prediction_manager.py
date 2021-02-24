@@ -1,12 +1,12 @@
+from app.models.ml_model import MlModel
 from multiprocessing import Semaphore
 from multiprocessing.synchronize import Semaphore as SemaphoreType
 from multiprocessing import Process, Pipe
 from multiprocessing.connection import Connection
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from app.prediction.predictor import Predictor
 from app.db import db
-from app.models.workspace import DataPoint
 from app.models.mongo_model import OID
 
 
@@ -24,9 +24,7 @@ class PredictionManager():
         self.prediction_id_to_util: Dict[str, PredictionUtil] = {}
 
     async def spawn_predictor(self, prediction_id: OID, model_id: OID, label_code_to_label: Dict[int, str]):
-        model_doc = await db.get().ml_models.find_one({"_id": model_id})
-        predictor = Predictor(window_size=model_doc["windowSize"], sliding_step=model_doc["slidingStep"], imputation_id=model_doc["imputer_object"],
-                              normalizer_id=model_doc["normalizer_object"], classifier_id=model_doc["classifier_object"], features=model_doc["features"], label_code_to_label=label_code_to_label)
+        predictor = Predictor(model_id, label_code_to_label=label_code_to_label)
 
         semaphore = Semaphore(0)
         (manager_end, predictor_end) = Pipe(duplex=True)
@@ -39,7 +37,7 @@ class PredictionManager():
         self.prediction_id_to_util[prediction_id] = PredictionUtil(
             process=process, semaphore=semaphore, manager_end=manager_end)
 
-    def submit_data(self, prediction_id: str, data_window: Dict[str, List[DataPoint]]):
+    def submit_data(self, prediction_id: str, data_window: Dict[str, List[Any]]):
         self.prediction_id_to_util[prediction_id].manager_end.send(data_window)
         print("----------")
         self.prediction_id_to_util[prediction_id].semaphore.release()

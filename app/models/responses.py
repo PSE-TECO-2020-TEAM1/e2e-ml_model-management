@@ -2,7 +2,7 @@ from pydantic.fields import Field
 from app.models.workspace import Sensor, Workspace
 from pydantic import BaseModel
 from app.models.mongo_model import MongoModel, OID
-from app.models.ml_model import ML_Model, PerformanceMetricsPerLabel
+from app.models.ml_model import MlModel, PerformanceMetricsPerLabel
 from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 
