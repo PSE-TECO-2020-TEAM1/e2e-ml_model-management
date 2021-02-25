@@ -1,5 +1,4 @@
 from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import cpu_count
 
 class TrainingPool:
 
@@ -7,7 +6,7 @@ class TrainingPool:
         self.executor: ProcessPoolExecutor
 
     def start(self):
-        self.executor = ProcessPoolExecutor(max_workers=cpu_count())
+        self.executor = ProcessPoolExecutor()
 
     def shutdown(self):
         self.executor.shutdown()

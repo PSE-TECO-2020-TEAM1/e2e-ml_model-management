@@ -1,3 +1,5 @@
+from multiprocessing import set_start_method
+import time
 import tsfresh
 import pickle
 from gridfs import GridFS
@@ -42,6 +44,9 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def train(self, samples: List[SampleInJson]):
+        # The child process can fork safely, even though it must be spawned by the parent
+        set_start_method("fork", force=True)
+
         print("--start--")
         self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
         self.db = self.client[self.settings.db_name]

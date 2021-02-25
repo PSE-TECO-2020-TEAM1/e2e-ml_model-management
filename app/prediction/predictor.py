@@ -1,7 +1,7 @@
-from pandas.core.indexes.base import Index
-from app.models.ml_model import MlModel
+from multiprocessing import set_start_method
 import tsfresh
 import pickle
+from pandas.core.indexes.base import Index
 from multiprocessing.synchronize import Semaphore as SemaphoreType
 from multiprocessing.connection import Connection
 from gridfs import GridFS
@@ -10,6 +10,7 @@ from pandas import DataFrame
 from typing import Dict, List
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 
+from app.models.ml_model import MlModel
 from app.models.mongo_model import OID
 from app.config import get_settings
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
@@ -45,9 +46,12 @@ class Predictor():
 
     # TODO rename
     def for_process(self, semaphore: SemaphoreType, predictor_end: Connection):
+        # The child process can fork safely, even though it must be spawned by the parent
+        set_start_method("fork", force=True)
+        
         self.__init_objects()
+        
         while True:
-
             while not semaphore.acquire():
                 pass
 
@@ -77,9 +81,8 @@ class Predictor():
     def __extract_features(self, pipeline_data: DataFrame) -> DataFrame:
         settings = {key: ComprehensiveFCParameters()[key] for key in self.sorted_features}
         pipeline_data["id"] = 0
-        # Don't spawn new processes, the prediction data is probably tiny and process spawn overhead is huge
         extracted = tsfresh.extract_features(pipeline_data, column_id="id",
-                                             default_fc_parameters=settings, n_jobs=0, disable_progressbar=False)
+                                             default_fc_parameters=settings, disable_progressbar=False)
         return extracted[Index(self.column_order)]
 
     def __impute(self, pipeline_data: DataFrame) -> DataFrame:

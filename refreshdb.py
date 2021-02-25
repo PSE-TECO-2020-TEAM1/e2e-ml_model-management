@@ -18,7 +18,7 @@ def fillData(num):
         data_points.append([random.randint(1, 100) for i in range(3)])
     return data_points
 
-DATA_POINTS = 1000000
+DATA_POINTS = 10000
 
 def fillDataPoints():
     sensors = ["accelerometer", "gyroscope"]

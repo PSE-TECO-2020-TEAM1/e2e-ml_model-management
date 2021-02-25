@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
-from multiprocessing import set_start_method
+from multiprocessing import set_forkserver_preload, set_start_method
 
 import app.config as config
 from app.db import db

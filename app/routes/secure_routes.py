@@ -1,3 +1,4 @@
+from multiprocessing.context import Process
 import jwt
 import json
 import uuid
@@ -56,8 +57,10 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    future = training_pool.submit(trainer.train, (None))
-    future.add_done_callback(lambda x: {print(time.time() - start)})
+    process = Process(target=trainer.train, args=(None,))
+    process.start()
+    process.join()
+    print(time.time() - start)
     # trainer.train(samples=None) #TODO change from none to result of fetch
     # print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
