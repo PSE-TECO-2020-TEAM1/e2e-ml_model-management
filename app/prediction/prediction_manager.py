@@ -27,7 +27,7 @@ class PredictionManager():
         semaphore = Semaphore(0)
         (manager_end, predictor_end) = Pipe(duplex=True)
         process = Process(target=predictor.for_process, args=(semaphore, predictor_end))
-        #process.daemon = True [extractfeatures predictorda tsfresh process spawnliyo paralel yapmak icin ama daemonic process spawnlayamiyo ondan fastapi on shutdown'da, burada processleri terminateleyip joinleeyn bi method olusturup onu cagirmamiz gerekiyo]
+        #process.daemon = True [extractfeatures predictorda tsfresh process spawnliyo paralel yapmak icin ama daemonic process spawnlayamiyo ondan fastapi on shutdown'da, burada processleri terminateleyen bi method olusturup onu cagirmamiz gerekiyo]
         process.start()
         if not process.is_alive():
             #TODO Clean up all resources if error!

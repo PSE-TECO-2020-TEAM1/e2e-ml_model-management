@@ -15,7 +15,6 @@ import app.models.responses as response_models
 from app.config import get_settings
 from app.training.trainer import Trainer
 from app.db import db
-from app.training.training_pool import training_pool
 from app.models.mongo_model import OID
 from app.models.workspace import Workspace, SampleInJson, WorkspaceData
 
@@ -59,10 +58,8 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
     start = time.time()
     process = Process(target=trainer.train, args=(None,))
     process.start()
-    process.join()
-    print(time.time() - start)
-    # trainer.train(samples=None) #TODO change from none to result of fetch
-    # print(time.time() - start)
+    #process.join()
+    #print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
 
 
@@ -75,10 +72,10 @@ async def __fetch_workspace_samples(workspace: Workspace) -> List[SampleInJson]:
 
         labels: List[str] = [label["name"] for label in json.loads(await http_client.get(url="").json())]  # TODO complete api endpoint
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
-        label_to_label_code["Other"] = "0"
+        label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
 
         await db.get().workspaces.update_one({"_id": workspace.id}, {
-            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code).dict()}})
+            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code, labelCodeToLabel=label_code_to_label).dict()}})
 
         # TODO complete api endpoint
         samples = [SampleInJson(sample) for sample in json.loads(await http_client.get(url="").json())]

@@ -7,7 +7,7 @@ from app.util.training_parameters import Feature
 class SlidingWindow(MongoModel):
     id: OID = Field(None, alias="_id")
     dataWindows: OID = Field(..., description="References to data windows (one SlidingWindowData document)")
-    labelsOfDataWindows: List[int]
+    labelsOfDataWindows: List[str]
     extractedFeatures: Dict[Feature, OID] = Field({}, description="Features extracted with this imputed data")
 
 class ExtractedFeature(MongoModel):

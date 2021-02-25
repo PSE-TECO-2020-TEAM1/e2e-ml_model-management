@@ -1,5 +1,4 @@
 from multiprocessing import set_start_method
-import time
 import tsfresh
 import pickle
 from gridfs import GridFS
@@ -143,10 +142,10 @@ class Trainer():
             "$set": {"workspaceData.slidingWindows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
         return sliding_window
 
-    def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, int]) -> Tuple[List[List[Dict]], List[int]]:
+    def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, str]) -> Tuple[List[List[Dict]], List[str]]:
         # TODO CONFIRM WE USE INDICES INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
         data_windows: List[List[Dict]] = []
-        labels_of_data_windows: List[int] = []
+        labels_of_data_windows: List[str] = []
         for sample in samples:
             timeframe_iterator = iter(sample.timeframes)
             current_timeframe = next(timeframe_iterator)
@@ -177,7 +176,7 @@ class Trainer():
                                                               for v in range(len(data_point))})
                 # Append this data window as a DataFrame to the list of all data windows
                 data_windows.append(data_window)
-                labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else 0)
+                labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else "0")
 
         return (data_windows, labels_of_data_windows)
 
@@ -265,10 +264,14 @@ class Trainer():
         classifier_object.fit(data, labels_of_data_windows)
         return classifier_object
 
-    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int], label_code_to_label: Dict[int, str]) -> PerformanceMetricsPerLabel:
+    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int], label_code_to_label: Dict[str, str]) -> PerformanceMetricsPerLabel:
         prediction = classifier_object.predict(test_data)
         result = {}
+        print(classification_report(test_labels, prediction, output_dict=True))
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
-            if label_code in [str(label_code) for label_code in label_code_to_label]:
-                result[label_code_to_label[int(label_code)]] = PerformanceMetrics(metrics=performance_metric)
+            if label_code in label_code_to_label:
+                result[label_code_to_label[label_code]] = PerformanceMetrics(metrics=performance_metric)
+            elif label_code == "0":
+                result["Other"] = PerformanceMetrics(metrics=performance_metric)
+
         return PerformanceMetricsPerLabel(metrics_of_labels=result)

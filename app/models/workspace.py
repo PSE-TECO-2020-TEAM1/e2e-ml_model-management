@@ -38,8 +38,8 @@ class Sample(MongoModel):
 
 class WorkspaceData(MongoModel):
     # TODO add this: last_modified: int = Field(..., description="Unix Timestamp")
-    labelToLabelCode: Dict[str, int] = Field(..., description="label -> identifier_number")
-    labelCodeToLabel: Dict[int, str] = Field(..., description="identifier_number -> label")
+    labelToLabelCode: Dict[str, str] = Field(..., description="label -> identifier_number")
+    labelCodeToLabel: Dict[str, str] = Field(..., description="identifier_number -> label")
     samples: List[Sample] = Field([], description="samples are set during the training")
     slidingWindows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
 

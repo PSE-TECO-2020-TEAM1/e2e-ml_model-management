@@ -48,7 +48,7 @@ class Predictor():
     def for_process(self, semaphore: SemaphoreType, predictor_end: Connection):
         # The child process can fork safely, even though it must be spawned by the parent
         set_start_method("fork", force=True)
-        
+
         self.__init_objects()
         
         while True:
@@ -64,11 +64,11 @@ class Predictor():
                     dataframe_data[sensor_data_point_index].update(
                         {sensor + str(i): sensor_data_point[i] for i in range(len(sensor_data_point))})
                     sensor_data_point_index += 1
-            prediction = self.__predict(DataFrame(dataframe_data))
-            translated_prediction = self.label_code_to_label[str(prediction[0])]
+            prediction = self.__predict(DataFrame(dataframe_data))[0] #TODO handle list correctly xd
+            translated_prediction = self.label_code_to_label[prediction] if prediction != "0" else "Other"
             predictor_end.send(translated_prediction)
 
-    def __predict(self, pipeline_data: DataFrame) -> int:
+    def __predict(self, pipeline_data: DataFrame) -> List[int]:
         pipeline_data = self.__preprocess(pipeline_data)
         return self.classifier_object.predict(pipeline_data)
 

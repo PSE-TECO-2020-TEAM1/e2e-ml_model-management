@@ -1,4 +1,3 @@
-import asyncio
 import pickle
 
 from bson import ObjectId
@@ -18,7 +17,7 @@ def fillData(num):
         data_points.append([random.randint(1, 100) for i in range(3)])
     return data_points
 
-DATA_POINTS = 10000
+DATA_POINTS = 1000
 
 def fillDataPoints():
     sensors = ["accelerometer", "gyroscope"]
@@ -36,8 +35,8 @@ def runtest():
         "label": "red",
         "dataPointCount": DATA_POINTS,
         "timeframes": [{
-            "start": 0,
-            "end": DATA_POINTS
+            "start": -555555,
+            "end": 999999
         }],
         "sensorDataPoints": fillDataPoints()
     }]
@@ -46,8 +45,8 @@ def runtest():
         "label": "blue",
         "dataPointCount": DATA_POINTS,
         "timeframes": [{
-            "start": 0,
-            "end": DATA_POINTS
+            "start": -555555,
+            "end": 999999
         }],
         "sensorDataPoints": fillDataPoints()
     }]
@@ -61,10 +60,10 @@ def runtest():
             "sensors": [{"name": "Accelerometer", "samplingRate": 50},
                         {"name": "Gyroscope", "samplingRate": 75}],
             "workspaceData": {
-                "labelToLabelCode": {"blue": 1, "red": 2},
+                "labelToLabelCode": {"blue": "1", "red": "2"},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},
                 "slidingWindows": {},
-                "samples": samples_list1
+                "samples": samples_list1 + samples_list2
             }
         }
     )
@@ -84,7 +83,7 @@ def runtest():
                 "labelToLabelCode": {"blue": 1, "red": 2},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},
                 "slidingWindows": {},
-                "samples": samples_list2
+                "samples": samples_list1 + samples_list2
             }
         }
     )
