@@ -45,7 +45,7 @@ class Predictor():
         client.close()
 
     # TODO rename
-    def for_process(self, semaphore: SemaphoreType, predictor_end: Connection):
+    def init_predictor_process(self, semaphore: SemaphoreType, predictor_end: Connection):
         # The child process can fork safely, even though it must be spawned by the parent
         set_start_method("fork", force=True)
 

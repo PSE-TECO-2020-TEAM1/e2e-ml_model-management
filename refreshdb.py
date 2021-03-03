@@ -20,7 +20,7 @@ def fillData(num):
 DATA_POINTS = 1000
 
 def fillDataPoints():
-    sensors = ["accelerometer", "gyroscope"]
+    sensors = ["Accelerometer", "Gyroscope"]
     object = {}
     for sensor in sensors:
         object[sensor] = fillData(DATA_POINTS)
@@ -57,8 +57,8 @@ def runtest():
             "userId": user_id,
             "mlModels": [],
             "progress": -1,
-            "sensors": [{"name": "Accelerometer", "samplingRate": 50},
-                        {"name": "Gyroscope", "samplingRate": 75}],
+            "sensors": [{"name": "Accelerometer", "samplingRate": 50, "dataFormat": ["x", "y", "z"]},
+                        {"name": "Gyroscope", "samplingRate": 75, "dataFormat": ["x", "y", "z"]}],
             "workspaceData": {
                 "labelToLabelCode": {"blue": "1", "red": "2"},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},
@@ -77,8 +77,8 @@ def runtest():
             "userId": user_id,
             "mlModels": [],
             "progress": -1,
-            "sensors": [{"name": "Accelerometer", "samplingRate": 50},
-                        {"name": "Gyroscope", "samplingRate": 75}],
+            "sensors": [{"name": "Accelerometer", "samplingRate": 50, "dataFormat": ["x", "y", "z"]},
+                        {"name": "Gyroscope", "samplingRate": 75, "dataFormat": ["x", "y", "z"]}],
             "workspaceData": {
                 "labelToLabelCode": {"blue": 1, "red": 2},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},

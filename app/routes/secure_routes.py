@@ -56,41 +56,12 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 
     import time
     start = time.time()
-    process = Process(target=trainer.train, args=(None,))
+    process = Process(target=trainer.train)
     process.start()
     #process.join()
     #print(time.time() - start)
     return Response(status_code=status.HTTP_200_OK)
 
-
-async def __fetch_workspace_samples(workspace: Workspace) -> List[SampleInJson]:
-    # TODO create client at the startup not each time
-    async with AsyncClient() as http_client:
-        last_modified: int = await http_client.get(url="/api/workspaces/" + workspace.id + "/samples", params={"onlyDate": True})
-        if last_modified == workspace.workspaceData.last_modified:
-            return None
-
-        labels: List[str] = [label["name"] for label in json.loads(await http_client.get(url="").json())]  # TODO complete api endpoint
-        label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
-        label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
-
-        await db.get().workspaces.update_one({"_id": workspace.id}, {
-            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code, labelCodeToLabel=label_code_to_label).dict()}})
-
-        # TODO complete api endpoint
-        samples = [SampleInJson(sample) for sample in json.loads(await http_client.get(url="").json())]
-        # Validate the data
-        allowed_sensors = {sensor.name for sensor in workspace.sensors}
-        for sample in samples:
-            if set(sample.sensorDataPoints.keys()) != allowed_sensors:
-                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                                    detail="Unrecognized sensors in the sample " + str(sample.id))
-            # TODO no validation here for sensor data point values size, for example [0,1,2,3,4] is a valid value for a datapoint of accelerometer
-            for key in sample.sensorDataPoints.keys():
-                if (len(sample[key]) != sample.dataPointCount):
-                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                                        detail="Number of data points of sensor " + key + " from sample " + str(sample.id) + " does not match the claimed data point count")
-        return samples
 
 
 @router.get("/workspaces/{workspaceId}/trainingProgress", response_model=response_models.GetTrainingProgressRes, status_code=status.HTTP_200_OK)

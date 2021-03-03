@@ -1,6 +1,7 @@
+from app.models.workspace import Sensor
 from pydantic.fields import Field
 from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from app.models.mongo_model import OID, MongoModel
 from app.util.performance_metrics import PerformanceMetric
@@ -30,4 +31,5 @@ class MlModel(MongoModel):
     hyperparameters: Dict[str, Any]
     labelPerformanceMetrics: PerformanceMetricsPerLabel
     columnOrder: List[str]
+    sensors: List[Sensor]
     labelCodeToLabel: Dict[str, str]

@@ -26,15 +26,15 @@ class PredictionManager():
 
         semaphore = Semaphore(0)
         (manager_end, predictor_end) = Pipe(duplex=True)
-        process = Process(target=predictor.for_process, args=(semaphore, predictor_end))
-        #process.daemon = True [extractfeatures predictorda tsfresh process spawnliyo paralel yapmak icin ama daemonic process spawnlayamiyo ondan fastapi on shutdown'da, burada processleri terminateleyen bi method olusturup onu cagirmamiz gerekiyo]
+        process = Process(target=predictor.init_predictor_process, args=(semaphore, predictor_end))
+        # TODO close processes on app shutdown (main.py)
         process.start()
         if not process.is_alive():
-            #TODO Clean up all resources if error!
+            predictor_end.close()
+            manager_end.close()
             raise OSError("A process can't be spawned for the prediction.")
 
-        #predictor_end.close()
-        
+        predictor_end.close()
         self.prediction_id_to_util[prediction_id] = PredictionUtil(
             process=process, semaphore=semaphore, manager_end=manager_end)
 

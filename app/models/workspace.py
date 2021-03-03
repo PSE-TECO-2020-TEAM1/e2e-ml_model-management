@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
 from app.models.mongo_model import OID, MongoModel
 from pydantic import Field
@@ -7,6 +7,7 @@ from pydantic import Field
 class Sensor(MongoModel):
     name: str
     samplingRate: int
+    dataFormat: List[str]
 
 
 class Timeframe(MongoModel):
@@ -22,15 +23,13 @@ class SampleInJson(MongoModel):
     id: OID
     label: str
     timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    # TODO camelCase this
     dataPointCount: int
-    # Don't complete the type! We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
-    sensorDataPoints: Dict[str, List[Any]] = Field(..., description="Dictionary that maps sensors to their data points")
+    sensorDataPoints: Dict[str, List[List[float]]] = Field(..., description="Dictionary that maps sensors to their data points")
+    
 
 class Sample(MongoModel):
     label: str
     timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    # TODO camelCase this
     dataPointCount: int
     sensorDataPoints: OID = Field(...,
                                   description="Reference to pickled dictionary that maps sensors to their data points")

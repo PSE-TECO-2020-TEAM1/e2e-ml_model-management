@@ -1,6 +1,7 @@
-from multiprocessing import set_start_method
+import json
 import tsfresh
 import pickle
+import requests
 from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
 from pymongo.database import Database
@@ -9,6 +10,9 @@ from tsfresh.feature_extraction import ComprehensiveFCParameters
 from sklearn.metrics import classification_report
 from sklearn.utils import shuffle
 from pymongo import MongoClient
+from multiprocessing import set_start_method
+from fastapi.exceptions import HTTPException
+from starlette import status
 
 from app.config import get_settings
 from app.models.ml_model import MlModel, PerformanceMetrics, PerformanceMetricsPerLabel
@@ -29,6 +33,7 @@ class Trainer():
         self.client: MongoClient
         self.db: Database
         self.fs: GridFS
+        self.workspace: Workspace
         self.settings = get_settings()
 
         self.progress: int = 0  # percentage
@@ -42,7 +47,46 @@ class Trainer():
         self.window_size = window_size
         self.sliding_step = sliding_step
 
-    def train(self, samples: List[SampleInJson]):
+    def __update_workspace_samples(self):
+        last_modified: int = requests.get(url="/api/workspaces/" + str(self.workspace_id) +
+                                          "/samples", params={"onlyDate": True})
+        if last_modified == self.workspace.workspaceData.last_modified:
+            return
+
+        labels: List[str] = [label["name"]
+                             for label in json.loads(requests.get(url="").json())]  # TODO complete api endpoint
+        label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
+        label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
+
+        # TODO complete api endpoint
+        samples = [SampleInJson(sample) for sample in json.loads(requests.get(url="").json())]
+        # Validate the received samples
+        # TODO instead of raising add a field (enum?) to the workspace that represents the training state
+        for sample in samples:
+            if len(sample.sensorDataPoints.keys) != len(self.workspace.sensors):
+                # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
+                exit(-1)
+            for sensor in self.workspace.sensors:
+                if sensor.name in sample.sensorDataPoints and len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
+                    # TODO set training state of workspace: "Number of data points of sensor " + sensor.name + " from sample " + str(sample.id) + " does not match the claimed data point count"
+                    exit(-1)
+                for data_point in sample.sensorDataPoints:
+                    if len(data_point) != len(sensor.dataFormat):
+                        # TODO set training state of workspace: "At least one data point of " + sensor.name + " from sample " + str(sample.id) + " is malformed"
+                        exit(-1)
+        # Validated so save the samples to the database
+        new_samples: List[Sample] = []
+        for sample in samples:
+            result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
+            sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
+                                      dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
+            new_samples.append(sample_to_insert)
+        new_data = WorkspaceData(samples=new_samples, labelToLabelCode=label_to_label_code,
+                                 labelCodeToLabel=label_code_to_label)
+        self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"workspaceData": new_data.dict()}})
+        self.workspace.workspaceData = new_data
+
+    def train(self):
         # The child process can fork safely, even though it must be spawned by the parent
         set_start_method("fork", force=True)
 
@@ -50,22 +94,13 @@ class Trainer():
         self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
-
-        workspace_data = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id})).workspaceData
-
-        if samples is not None:
-            samples_to_insert: List[Sample] = []
-            for sample in samples:
-                result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
-                sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
-                                          dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
-                samples.append(sample_to_insert)
-            self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"samples": samples_to_insert}})
+        self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
+        # TODO: put back in self.__update_workspace_samples()
 
         print("start split to windows")
 
         # data split to windows
-        pipeline_data = self.__get_data_split_to_windows(workspace_data)
+        pipeline_data = self.__get_data_split_to_windows()
         labels_of_data_windows = pipeline_data.labelsOfDataWindows
 
         print("start feature extraction")
@@ -92,6 +127,7 @@ class Trainer():
 
         print("start normalize")
 
+        print(train_data)
         # normalize
         (train_data, test_data, normalizer_object) = self.__normalize(train_data, test_data)
         print("start train")
@@ -102,8 +138,7 @@ class Trainer():
         print("start performance metrics")
 
         # performance metrics
-        performance_metrics = self.__get_performance_metrics(
-            classifier_object, test_data, test_labels, workspace_data.labelCodeToLabel)
+        performance_metrics = self.__get_performance_metrics(classifier_object, test_data, test_labels)
 
         print("start saving ml model")
 
@@ -111,27 +146,29 @@ class Trainer():
         imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
-        
+
         ml_model = MlModel(name=self.model_name, workspaceId=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
-                           sortedFeatures=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id, normalization=self.normalizer, normalizerObject=normalizer_object_db_id, classifier=self.classifier, classifierObject=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics, columnOrder=train_data.columns.tolist(), labelCodeToLabel=workspace_data.labelCodeToLabel)
+                           sortedFeatures=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id,
+                           normalization=self.normalizer, normalizerObject=normalizer_object_db_id, classifier=self.classifier,
+                           classifierObject=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics,
+                           columnOrder=train_data.columns.tolist(), sensors=self.workspace.sensors, labelCodeToLabel=self.workspace.workspaceData.labelCodeToLabel)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude_none=True))
         self.db.workspaces.update_one({"_id": self.workspace_id}, {
                                       "$push": {"mlModels": result.inserted_id}, "$set": {"progress": -1}})
 
-        # close db connection
-        self.client.close()
         print("--end--")
+        exit(0) # Clean up automatically
 
-    def __get_data_split_to_windows(self, workspace_data: WorkspaceData) -> SlidingWindow:
+    def __get_data_split_to_windows(self) -> SlidingWindow:
         # If already cached, retrieve from the database
-        if str(self.window_size) + "_" + str(self.sliding_step) in workspace_data.slidingWindows:
-            data_windows_id = workspace_data.slidingWindows[str(self.window_size) + "_" + str(self.sliding_step)]
+        if str(self.window_size) + "_" + str(self.sliding_step) in self.workspace.workspaceData.slidingWindows:
+            data_windows_id = self.workspace.workspaceData.slidingWindows[str(
+                self.window_size) + "_" + str(self.sliding_step)]
             return SlidingWindow(**self.db.sliding_windows.find_one({"_id": data_windows_id}))
 
         # Otherwise split yourself and cache
-        (data_windows, labels_of_data_windows) = self.__split_to_windows(
-            workspace_data.samples, workspace_data.labelToLabelCode)
+        (data_windows, labels_of_data_windows) = self.__split_to_windows()
 
         inserted_id = self.fs.put(pickle.dumps(data_windows))
         sliding_window = SlidingWindow(dataWindows=inserted_id, labelsOfDataWindows=labels_of_data_windows)
@@ -142,11 +179,11 @@ class Trainer():
             "$set": {"workspaceData.slidingWindows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
         return sliding_window
 
-    def __split_to_windows(self, samples: List[Sample], label_to_label_code: Dict[str, str]) -> Tuple[List[List[Dict]], List[str]]:
+    def __split_to_windows(self) -> Tuple[List[List[Dict]], List[str]]:
         # TODO CONFIRM WE USE INDICES INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
         data_windows: List[List[Dict]] = []
         labels_of_data_windows: List[str] = []
-        for sample in samples:
+        for sample in self.workspace.workspaceData.samples:
             timeframe_iterator = iter(sample.timeframes)
             current_timeframe = next(timeframe_iterator)
 
@@ -162,21 +199,23 @@ class Trainer():
                 data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + \
                     self.window_size - 1 <= current_timeframe.end
 
-                #  [time][sensor e.g acc_x]
+                # [time][sensor e.g acc_x]
                 data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
+
                 # For each sensor (sorted so that we always get the same column order)
-                for sensor in sorted(sensor_data_points):
+                for sensor in self.workspace.sensors:
                     # Data points of this sensor (time as index)
-                    data_points = sensor_data_points[sensor]
+                    data_points = sensor_data_points[sensor.name]
                     # For each data point which is in this data window
                     for datapoint_offset in range(0, self.window_size):
                         # Append the values to this data window (index of values is e.g x in acc_x)
                         data_point = data_points[window_offset+datapoint_offset]
-                        data_window[datapoint_offset].update({sensor+str(v): data_point[v]
-                                                              for v in range(len(data_point))})
+                        data_window[datapoint_offset].update({sensor.name + "_" + sensor.dataFormat[v]: data_point[v]
+                                                              for v in range(len(sensor.dataFormat))})
                 # Append this data window as a DataFrame to the list of all data windows
                 data_windows.append(data_window)
-                labels_of_data_windows.append(label_to_label_code[sample.label] if data_window_in_timeframe else "0")
+                labels_of_data_windows.append(
+                    self.workspace.workspaceData.labelToLabelCode[sample.label] if data_window_in_timeframe else "0")
 
         return (data_windows, labels_of_data_windows)
 
@@ -264,13 +303,14 @@ class Trainer():
         classifier_object.fit(data, labels_of_data_windows)
         return classifier_object
 
-    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int], label_code_to_label: Dict[str, str]) -> PerformanceMetricsPerLabel:
+    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int]) -> PerformanceMetricsPerLabel:
         prediction = classifier_object.predict(test_data)
         result = {}
         print(classification_report(test_labels, prediction, output_dict=True))
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
-            if label_code in label_code_to_label:
-                result[label_code_to_label[label_code]] = PerformanceMetrics(metrics=performance_metric)
+            if label_code in self.workspace.workspaceData.labelCodeToLabel:
+                result[self.workspace.workspaceData.labelCodeToLabel[label_code]
+                       ] = PerformanceMetrics(metrics=performance_metric)
             elif label_code == "0":
                 result["Other"] = PerformanceMetrics(metrics=performance_metric)
 

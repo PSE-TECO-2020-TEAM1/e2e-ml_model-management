@@ -42,5 +42,6 @@ class PostTrainReq(MongoModel):
 class PostSubmitDataReq(MongoModel):
     predictionId: str
     dataPointCount: int
-    # Don't complete the type! We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
-    data: Dict[str, List[Any]]
+    # We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
+    # We validate it later in its own predictor process
+    data: Any
