@@ -1,6 +1,10 @@
+import json
 from multiprocessing import set_start_method
+from fastapi.exceptions import HTTPException
+from starlette import status
 import tsfresh
 import pickle
+import requests
 from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
 from pymongo.database import Database
@@ -42,7 +46,34 @@ class Trainer():
         self.window_size = window_size
         self.sliding_step = sliding_step
 
-    def train(self, samples: List[SampleInJson]):
+    def __fetch_workspace_samples(self, workspace: Workspace) -> List[Sample]:
+        last_modified: int = requests.get(url="/api/workspaces/" + self.workspace_id + "/samples", params={"onlyDate": True})
+        if last_modified == workspace.workspaceData.last_modified:
+            return workspace.workspaceData.samples
+
+        labels: List[str] = [label["name"] for label in json.loads(requests.get(url="").json())]  # TODO complete api endpoint
+        label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
+        label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
+
+        self.db.workspaces.update_one({"_id": self.workspace_id}, {
+            "$set": {"workspaceData": WorkspaceData(labelToLabelCode=label_to_label_code, labelCodeToLabel=label_code_to_label).dict()}})
+
+        # TODO complete api endpoint
+        samples = [SampleInJson(sample) for sample in json.loads(requests.get(url="").json())]
+        # Validate the data
+        allowed_sensors = {sensor.name for sensor in workspace.sensors}
+        for sample in samples:
+            if set(sample.sensorDataPoints.keys()) != allowed_sensors:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                    detail="Unrecognized sensors in the sample " + str(sample.id))
+            # TODO no validation here for sensor data point values size, for example [0,1,2,3,4] is a valid value for a datapoint of accelerometer
+            for key in sample.sensorDataPoints.keys():
+                if (len(sample[key]) != sample.dataPointCount):
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                        detail="Number of data points of sensor " + key + " from sample " + str(sample.id) + " does not match the claimed data point count")
+        return samples
+
+    def train(self):
         # The child process can fork safely, even though it must be spawned by the parent
         set_start_method("fork", force=True)
 
@@ -51,16 +82,19 @@ class Trainer():
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
 
-        workspace_data = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id})).workspaceData
+        workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
+        self.__fetch_workspace_samples()
 
-        if samples is not None:
-            samples_to_insert: List[Sample] = []
-            for sample in samples:
-                result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
-                sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
-                                          dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
-                samples.append(sample_to_insert)
-            self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"samples": samples_to_insert}})
+        workspace_data = workspace.workspaceData
+
+        # if samples is not None:
+        #     samples_to_insert: List[Sample] = []
+        #     for sample in samples:
+        #         result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
+        #         sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
+        #                                   dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
+        #         samples.append(sample_to_insert)
+        #     self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"samples": samples_to_insert}})
 
         print("start split to windows")
 
