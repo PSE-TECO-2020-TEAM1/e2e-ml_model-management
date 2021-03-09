@@ -63,11 +63,11 @@ class Trainer():
         # Validate the received samples
         # TODO instead of raising add a field (enum?) to the workspace that represents the training state
         for sample in samples:
-            if len(sample.sensorDataPoints.keys) != len(self.workspace.sensors):
-                # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
-                exit(-1)
             for sensor in self.workspace.sensors:
-                if sensor.name in sample.sensorDataPoints and len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
+                if sensor.name not in sample.sensorDataPoints:
+                    # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
+                    exit(-1)
+                if len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
                     # TODO set training state of workspace: "Number of data points of sensor " + sensor.name + " from sample " + str(sample.id) + " does not match the claimed data point count"
                     exit(-1)
                 for data_point in sample.sensorDataPoints:
@@ -199,10 +199,9 @@ class Trainer():
                 data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + \
                     self.window_size - 1 <= current_timeframe.end
 
-                # [time][sensor e.g acc_x]
+                # [data_point_index][sensor_component: value]
                 data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
 
-                # For each sensor (sorted so that we always get the same column order)
                 for sensor in self.workspace.sensors:
                     # Data points of this sensor (time as index)
                     data_points = sensor_data_points[sensor.name]

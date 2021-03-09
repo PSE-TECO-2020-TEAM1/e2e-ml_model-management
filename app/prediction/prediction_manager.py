@@ -39,19 +39,15 @@ class PredictionManager():
             process=process, semaphore=semaphore, manager_end=manager_end)
 
     def submit_data(self, prediction_id: str, data_point_count: int, data_window: Dict[str, List[Any]]):
-        #TODO check if data_window is valid ?
         toPredict = PredictorEntry(data_window, data_point_count)
         self.prediction_id_to_util[prediction_id].manager_end.send(toPredict)
-        print("----------")
         self.prediction_id_to_util[prediction_id].semaphore.release()
-        print(self.prediction_id_to_util[prediction_id].manager_end.recv())
-        print("----------")
 
-    def get_predictions(self, prediction_id: OID) -> List[str]:
+    def get_prediction_results(self, prediction_id: OID) -> List[str]:
         results: List[str] = []
-        result_pipe = self.prediction_id_to_util[prediction_id].predictor_end
+        result_pipe = self.prediction_id_to_util[prediction_id].manager_end
         while result_pipe.poll():
-            result_pipe.recv()
+            results.append(result_pipe.recv())
         return results
 
 

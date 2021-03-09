@@ -56,3 +56,6 @@ class GetTrainingProgressRes(MongoModel):
 
 class GetPredictionIdRes(MongoModel):
     predictionId: str
+
+class GetPredictionResultsRes(MongoModel):
+    predictions: List[str]
