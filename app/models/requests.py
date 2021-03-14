@@ -26,9 +26,12 @@ class PostTrainReq(MongoModel):
 
     @validator("hyperparameters")
     def valid_hyperparameters(cls, v, values):
-        # Check if v is legal configuration, raise an error if so
+        # Check if v is legal configuration, raise an error if not
+        for key, value in v.items():
+            if type(value) == str and value.isnumeric():
+                v[key] = int(value)
         config_space = config_spaces[values["classifier"]]
-        config = Configuration(config_space, v)
+        Configuration(config_space, v)
         # Parse strings to actual types ( strings are required by the ConfigSpace module ¯\_(ツ)_/¯ )
         for key, value in v.items():
             if value == "None":
@@ -37,7 +40,7 @@ class PostTrainReq(MongoModel):
                 v[key] = True
             elif value == "False":
                 v[key] = False
-        return config
+        return v
 
 class PostSubmitDataReq(MongoModel):
     predictionId: str
