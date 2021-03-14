@@ -62,21 +62,6 @@ class Trainer():
 
         # TODO complete api endpoint
         samples = [SampleInJson(sample) for sample in json.loads(requests.get(url="").json())]
-        # Validate the received samples
-        # TODO instead of raising add a field (enum?) to the workspace that represents the training state
-        # for sample in samples:
-        #     for sensor in self.workspace.sensors:
-        #         if sensor.name not in sample.sensorDataPoints:
-        #             # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
-        #             exit(-1)
-        #         if len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
-        #             # TODO set training state of workspace: "Number of data points of sensor " + sensor.name + " from sample " + str(sample.id) + " does not match the claimed data point count"
-        #             exit(-1)
-        #         for data_point in sample.sensorDataPoints:
-        #             if len(data_point) != len(sensor.dataFormat):
-        #                 # TODO set training state of workspace: "At least one data point of " + sensor.name + " from sample " + str(sample.id) + " is malformed"
-        #                 exit(-1)
-        # Validated so save the samples to the database
         parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
         for sample in samples:
@@ -131,7 +116,6 @@ class Trainer():
 
         print("start normalize")
 
-        print(train_data)
         # normalize
         (train_data, test_data, normalizer_object) = self.__normalize(train_data, test_data)
         print("start train")
@@ -191,7 +175,8 @@ class Trainer():
             # For each window in this sample, incremented by the sliding step value starting from 0
             for window_offset in range(0, len(sensor_data_points.index) - self.window_size + 1, self.sliding_step):
                 data_windows.append(sensor_data_points.iloc[window_offset:window_offset + self.window_size])
-                labels_of_data_windows.append(sample.label)
+                label = self.workspace.workspaceData.labelToLabelCode[sample.label]
+                labels_of_data_windows.append(label)
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
@@ -224,7 +209,7 @@ class Trainer():
         for feature in self.sorted_features:
             dict_to_use = cached_extracted_features if feature in cached_extracted_features else newly_extracted_features
             dataframes.append(dict_to_use[feature])
-        return pandas.concat(dataframes, axis=1, ignore_index=True)
+        return pandas.concat(dataframes, axis=1)
 
     def __extractFeatures(self, data_windows: List[DataFrame], features: List[Feature]) -> Dict[Feature, DataFrame]:
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
@@ -233,7 +218,7 @@ class Trainer():
         settings = {key: ComprehensiveFCParameters()[key] for key in features}
         for data_window_index in range(len(data_windows)):
             data_windows[data_window_index]["id"] = data_window_index
-        data_windows = pandas.concat(data_windows, ignore_index=True)
+        data_windows = pandas.concat(data_windows)
         extracted = tsfresh.extract_features(data_windows, column_id="id",
                                              default_fc_parameters=settings, pivot=False, disable_progressbar=False)
         # Split by columns features
@@ -247,8 +232,6 @@ class Trainer():
         for feature in newly_extracted_features:
             newly_extracted_features[feature] = DataFrame(newly_extracted_features[feature])
         return newly_extracted_features
-
-    # TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize, ...)
 
     def __impute(self, train_data: DataFrame, test_data: DataFrame) -> Tuple[DataFrame, DataFrame, IImputer]:
         imputer_object: IImputer = get_imputer(self.imputation)
@@ -271,13 +254,12 @@ class Trainer():
 
     def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int]) -> PerformanceMetricsPerLabel:
         prediction = classifier_object.predict(test_data)
-        result = {}
-        print(classification_report(test_labels, prediction, output_dict=True))
+        result = []
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
             if label_code in self.workspace.workspaceData.labelCodeToLabel:
-                result[self.workspace.workspaceData.labelCodeToLabel[label_code]
-                       ] = PerformanceMetrics(metrics=performance_metric)
+                label = self.workspace.workspaceData.labelCodeToLabel[label_code]
+                result.append(PerformanceMetrics(label=label, metrics=performance_metric))
             elif label_code == "0":
-                result["Other"] = PerformanceMetrics(metrics=performance_metric)
+                result.append(PerformanceMetrics(label="Other", metrics=performance_metric))
 
         return PerformanceMetricsPerLabel(metrics_of_labels=result)

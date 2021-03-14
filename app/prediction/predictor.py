@@ -1,3 +1,5 @@
+from app.util.sample_parser import SampleParser
+from app.models.workspace import DataPoint
 import tsfresh
 import pickle
 from collections import deque
@@ -18,10 +20,10 @@ from app.util.ml_objects import IClassifier, IImputer, INormalizer
 
 
 class PredictorEntry():
-    def __init__(self, data_points: Dict[str, List[List[float]]], data_point_count: int):
-        self.data_points = data_points
-        self.data_point_count = data_point_count
-
+    def __init__(self, datapoints: Dict[str, List[DataPoint]], start: int, end: int):
+        self.datapoints = datapoints
+        self.start = start
+        self.end = end
 
 class Predictor():
     def __init__(self, model_id: OID):
@@ -53,23 +55,26 @@ class Predictor():
 
         self.__init_objects()
         
+        parser = SampleParser(self.sensors)
         last_window: Deque[Dict[str, float]] = deque()
         while True:
             while not semaphore.acquire():
                 pass
 
             entry: PredictorEntry = predictor_end.recv()
-            if not self.__valid_entry(entry):
+            if not self.__valid_entry(entry.datapoints):
                 # TODO write -1 to the pipe maybe? or we can even pass the error message since pipe objects are all strings 
                 continue
-            
+            for sensor in self.sensors:
+                entry.datapoints[sensor.name] = parser.interpolate_sensor_datapoints(entry.datapoints[sensor.name], len(sensor.dataFormat), entry.start, entry.end)
             data_windows: List[List[Dict]] = []
-            while entry.data_point_count > 0:
+            datapoint_count = int((entry.end - entry.start) / parser.delta)
+            while datapoint_count > 0:
                 split_data_point: Dict[str, float] = {}
                 for sensor in self.sensors:
                     for i in range(len(sensor.dataFormat)):
-                        split_data_point[sensor.name + "_" + sensor.dataFormat[i]] = entry.data_points[sensor.name][-entry.data_point_count][i]
-                entry.data_point_count -= 1
+                        split_data_point[sensor.name + "_" + sensor.dataFormat[i]] = entry.datapoints[sensor.name][-datapoint_count][i]
+                datapoint_count -= 1
                 last_window.append(split_data_point)
                 if len(last_window) == self.window_size:
                     data_windows.append(list(last_window))
@@ -77,21 +82,17 @@ class Predictor():
                         last_window.popleft()
             if len(data_windows) == 0:
                 continue
-
             predictions = self.__predict(data_windows)
-            print(predictions)
             for prediction in predictions:
                 translated_prediction = self.label_code_to_label[prediction] if prediction != "0" else "Other"
                 predictor_end.send(translated_prediction)
 
-    def __valid_entry(self, entry: PredictorEntry):
+    def __valid_entry(self, data: Dict[str, List[DataPoint]]):
         for sensor in self.sensors:
-            if sensor.name not in entry.data_points:
+            if sensor.name not in data:
                 return False
-            if len(entry.data_points[sensor.name]) != entry.data_point_count:
-                return False
-            for data_point in entry.data_points[sensor.name]:
-                if len(data_point) != len(sensor.dataFormat):
+            for data_point in data[sensor.name]:
+                if len(data_point.data) != len(sensor.dataFormat):
                     return False
         return True
         
@@ -100,7 +101,7 @@ class Predictor():
         pipeline_data = self.__preprocess(pipeline_data)
         return self.classifier_object.predict(pipeline_data)
 
-    def __preprocess(self, pipeline_data: List[List[Dict]]) -> DataFrame:
+    def __preprocess(self, pipeline_data: List[List[Dict]]) -> DataFrame: # List[List[DataPoint]]
         pipeline_data = self.__extract_features(pipeline_data)
         pipeline_data = self.__impute(pipeline_data)
         pipeline_data = self.__normalize(pipeline_data)

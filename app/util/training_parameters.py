@@ -26,7 +26,6 @@ class Feature(str, Enum):
     MEDIAN = "median"
     SKEWNESS = "skewness"
     KURTOSIS = "kurtosis"
-    # TODO add more features
 
 class Classifier(str, Enum):
     KNEIGHBORS_CLASSIFIER = "kneighbors_classifier"

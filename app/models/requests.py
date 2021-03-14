@@ -4,7 +4,7 @@ from pydantic import validator
 from pydantic.fields import Field
 
 from app.models.mongo_model import OID, MongoModel
-from app.models.workspace import Sensor
+from app.models.workspace import DataPoint, Sensor
 from app.util.classifier_config_spaces import config_spaces
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)
@@ -41,7 +41,8 @@ class PostTrainReq(MongoModel):
 
 class PostSubmitDataReq(MongoModel):
     predictionId: str
-    dataPointCount: int
     # We don't want pydantic to validate the data points, as the data is potentially huge and the validation blocks the event loop.
     # We validate it later in its own predictor process
-    data: Any
+    data: Dict[str, List[DataPoint]]
+    start: int
+    end: int
