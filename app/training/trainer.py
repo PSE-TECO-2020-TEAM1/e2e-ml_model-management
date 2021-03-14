@@ -208,7 +208,6 @@ class Trainer():
                 not_cached_features.append(feature)
 
         newly_extracted_features: Dict[Feature, DataFrame]
-
         if not_cached_features:
             # We have to load from the database for the case where data windows are cached
             data_windows: List[DataFrame] = pickle.loads(self.fs.get(sliding_window.dataWindows).read())
@@ -225,7 +224,7 @@ class Trainer():
         for feature in self.sorted_features:
             dict_to_use = cached_extracted_features if feature in cached_extracted_features else newly_extracted_features
             dataframes.append(dict_to_use[feature])
-        return pandas.concat(dataframes, axis=1)
+        return pandas.concat(dataframes, axis=1, ignore_index=True)
 
     def __extractFeatures(self, data_windows: List[DataFrame], features: List[Feature]) -> Dict[Feature, DataFrame]:
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
@@ -234,7 +233,7 @@ class Trainer():
         settings = {key: ComprehensiveFCParameters()[key] for key in features}
         for data_window_index in range(len(data_windows)):
             data_windows[data_window_index]["id"] = data_window_index
-        data_windows = pandas.concat(data_windows)
+        data_windows = pandas.concat(data_windows, ignore_index=True)
         extracted = tsfresh.extract_features(data_windows, column_id="id",
                                              default_fc_parameters=settings, pivot=False, disable_progressbar=False)
         # Split by columns features
