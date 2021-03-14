@@ -19,8 +19,11 @@ from app.models.mongo_model import OID
 from app.models.workspace import Workspace, SampleInJson, WorkspaceData
 
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
+    decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
     try:
+        print(get_settings().secret_key)
         decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
+        print(decoded)
         if "exp" not in decoded:
             raise jwt.ExpiredSignatureError
         return ObjectId(decoded["userId"])
@@ -32,7 +35,7 @@ router = APIRouter()
 
 @router.post("/workspaces/createModelWorkspace", status_code=status.HTTP_201_CREATED)
 async def create_model_workspace(req: request_models.PostCreateWorkspaceReq, user_id=Depends(extract_userId)):
-    workspace = Workspace(_id=req.workspace_id, user_id=user_id, sensors=req.sensors)
+    workspace = Workspace(_id=req.workspaceId, user_id=user_id, sensors=req.sensors)
     await db.get().workspaces.insert_one(workspace.dict(by_alias=True))
     return #TODO how to return empty and not null?
 
