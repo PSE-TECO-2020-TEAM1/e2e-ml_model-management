@@ -1,3 +1,4 @@
+from app.models.workspace import DataPoint
 from multiprocessing import Semaphore
 from multiprocessing.synchronize import Semaphore as SemaphoreType
 from multiprocessing import Process, Pipe
@@ -38,9 +39,9 @@ class PredictionManager():
         self.prediction_id_to_util[prediction_id] = PredictionUtil(
             process=process, semaphore=semaphore, manager_end=manager_end)
 
-    def submit_data(self, prediction_id: str, data_point_count: int, data_window: Dict[str, List[Any]]):
-        toPredict = PredictorEntry(data_window, data_point_count)
-        self.prediction_id_to_util[prediction_id].manager_end.send(toPredict)
+    def submit_data(self, prediction_id: str, data: Dict[str, List[DataPoint]], start: int, end: int):
+        entry = PredictorEntry(data, start, end)
+        self.prediction_id_to_util[prediction_id].manager_end.send(entry)
         self.prediction_id_to_util[prediction_id].semaphore.release()
 
     def get_prediction_results(self, prediction_id: OID) -> List[str]:

@@ -42,7 +42,7 @@ async def get_prediction_config(predictionId: str):
 @router.post("/submitData", status_code=status.HTTP_200_OK)
 async def post_submit_data(req: request_models.PostSubmitDataReq):
     # TODO here properly with checks etc...
-    prediction_manager.submit_data(req.predictionId, req.dataPointCount, req.data)
+    prediction_manager.submit_data(req.predictionId, req.data, req.start, req.end)
 
 @router.get("/predictionResults", response_model=response_models.GetPredictionResultsRes, status_code=HTTP_200_OK)
 async def get_prediction_results(predictionId: str):

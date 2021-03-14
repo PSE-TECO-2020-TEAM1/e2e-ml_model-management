@@ -26,6 +26,7 @@ def fillData():
         data.append(intermediate)
     return fs.put(pickle.dumps(DataFrame(data)))
 
+
 def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
@@ -33,21 +34,11 @@ def runtest():
 
     samples_list1 = [{
         "label": "red",
-        "dataPointCount": DATA_POINTS,
-        "timeframes": [{
-            "start": -555555,
-            "end": 999999
-        }],
         "sensorDataPoints": fillData()
     }]
 
     samples_list2 =[{
         "label": "blue",
-        "dataPointCount": DATA_POINTS,
-        "timeframes": [{
-            "start": -555555,
-            "end": 999999
-        }],
         "sensorDataPoints": fillData()
     }]
     
@@ -57,8 +48,8 @@ def runtest():
             "userId": user_id,
             "mlModels": [],
             "progress": -1,
-            "sensors": [{"name": "Accelerometer", "samplingRate": 50, "dataFormat": ["x", "y", "z"]},
-                        {"name": "Gyroscope", "samplingRate": 75, "dataFormat": ["x", "y", "z"]}],
+            "sensors": [{"name": "Accelerometer", "samplingRate": 2, "dataFormat": ["x", "y", "z"]},
+                        {"name": "Gyroscope", "samplingRate": 3, "dataFormat": ["x", "y", "z"]}],
             "workspaceData": {
                 "labelToLabelCode": {"blue": "1", "red": "2"},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},
@@ -77,8 +68,8 @@ def runtest():
             "userId": user_id,
             "mlModels": [],
             "progress": -1,
-            "sensors": [{"name": "Accelerometer", "samplingRate": 50, "dataFormat": ["x", "y", "z"]},
-                        {"name": "Gyroscope", "samplingRate": 75, "dataFormat": ["x", "y", "z"]}],
+            "sensors": [{"name": "Accelerometer", "samplingRate": 2, "dataFormat": ["x", "y", "z"]},
+                        {"name": "Gyroscope", "samplingRate": 3, "dataFormat": ["x", "y", "z"]}],
             "workspaceData": {
                 "labelToLabelCode": {"blue": 1, "red": 2},
                 "labelCodeToLabel": {"1": "blue", "2": "red"},

@@ -35,23 +35,23 @@ class SampleParser():
 
     def parse_timeframe(self, timeframe: Timeframe, sensor_data_points: Dict[str, List[DataPoint]]) -> DataFrame:
         dataframe_data: List[Dict[str, float]] = []
-        ideal_datapoint_count = (timeframe.end - timeframe.start) / self.delta
         for sensor in self.sensors:
-            # Normalize the timestamps
-            datapoints = sensor_data_points[sensor.name]
-            for datapoint in datapoints:
-                datapoint.timestamp -= timeframe.start
-            interpolated = self.interpolate_sensor_datapoints(datapoints, len(sensor.dataFormat), ideal_datapoint_count)
-            for datapoint_index in range(ideal_datapoint_count):
+            interpolated = self.interpolate_sensor_datapoints(sensor_data_points[sensor], len(sensor.dataFormat), timeframe.start, timeframe.en)
+            for datapoint_index in range(len(interpolated)):
                 for format_index in range(len(sensor.dataFormat)):
                     row = dataframe_data[datapoint_index]
                     row[sensor.name + "_" + sensor.dataFormat[format_index]] = interpolated[datapoint_index][format_index]
         return DataFrame(dataframe_data)
 
-    def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, target_len: int) -> List[List[float]]:
+    def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, start: int, end: int) -> List[List[float]]:
+        # Normalize the timestamps
+        for datapoint in datapoints:
+            datapoint.timestamp -= start
+            
         result: List[List[float]] = []
         hi = 0
         i = 0
+        target_len = int((end - start) / self.delta)
         while i * self.delta <= datapoints[0].timestamp:
             result.append(datapoints[0].data)
             i += 1
@@ -61,7 +61,7 @@ class SampleParser():
                 continue
             while i * self.delta > datapoints[hi].timestamp:
                 hi += 1
-            interpolation_percentage = (i * self.delta - datapoints[hi - 1]) / (datapoints[hi] - datapoints[hi - 1])
+            interpolation_percentage = (i * self.delta - datapoints[hi - 1].timestamp) / (datapoints[hi].timestamp - datapoints[hi - 1].timestamp)
             interpolated_datapoint = []
             for format_index in range(sensor_format_len):
                 difference = datapoints[hi].data[format_index] - datapoints[hi - 1].data[format_index]

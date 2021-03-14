@@ -8,11 +8,12 @@ from app.util.performance_metrics import PerformanceMetric
 
 
 class PerformanceMetrics(MongoModel):
+    name: str
     metrics: Dict[PerformanceMetric, float]
 
 
 class PerformanceMetricsPerLabel(MongoModel):
-    metrics_of_labels: Dict[str, PerformanceMetrics]
+    metrics_of_labels: List[PerformanceMetrics]
 
 
 class MlModel(MongoModel):
