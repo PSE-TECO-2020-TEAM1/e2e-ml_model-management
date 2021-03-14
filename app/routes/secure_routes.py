@@ -35,7 +35,7 @@ router = APIRouter()
 
 @router.post("/workspaces/createModelWorkspace", status_code=status.HTTP_201_CREATED)
 async def create_model_workspace(req: request_models.PostCreateWorkspaceReq, user_id=Depends(extract_userId)):
-    workspace = Workspace(_id=req.workspaceId, user_id=user_id, sensors=req.sensors)
+    workspace = Workspace(_id=req.workspaceId, userId=user_id, sensors=req.sensors)
     await db.get().workspaces.insert_one(workspace.dict(by_alias=True))
     return #TODO how to return empty and not null?
 
