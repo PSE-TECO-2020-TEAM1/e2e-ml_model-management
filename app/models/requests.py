@@ -37,6 +37,8 @@ class PostTrainReq(MongoModel):
                 v[key] = True
             elif value == "False":
                 v[key] = False
+            elif value.isnumeric():
+                v[key] = int(value)
         return config
 
 class PostSubmitDataReq(MongoModel):
