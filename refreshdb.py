@@ -3,6 +3,7 @@ import pickle
 from bson import ObjectId
 from gridfs import GridFS
 import random
+from pandas.core.frame import DataFrame
 
 from pymongo.mongo_client import MongoClient
 
@@ -11,20 +12,19 @@ client = MongoClient(uri, 27017)
 db = client.test
 fs = GridFS(db)
 
-def fillData(num):
-    data_points = []
-    for i in range(num):
-        data_points.append([random.randint(1, 100) for i in range(3)])
-    return data_points
-
 DATA_POINTS = 1000
 
-def fillDataPoints():
+def fillData():
     sensors = ["Accelerometer", "Gyroscope"]
-    object = {}
-    for sensor in sensors:
-        object[sensor] = fillData(DATA_POINTS)
-    return fs.put(pickle.dumps(object))
+    format = ["x", "y", "z"]
+    data = []
+    for i in range(DATA_POINTS):
+        intermediate = {}
+        for sensor in sensors:
+            for j in format:
+                intermediate[sensor+"_"+j] = random.randint(1, 100)
+        data.append(intermediate)
+    return fs.put(pickle.dumps(DataFrame(data)))
 
 def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
@@ -38,7 +38,7 @@ def runtest():
             "start": -555555,
             "end": 999999
         }],
-        "sensorDataPoints": fillDataPoints()
+        "sensorDataPoints": fillData()
     }]
 
     samples_list2 =[{
@@ -48,7 +48,7 @@ def runtest():
             "start": -555555,
             "end": 999999
         }],
-        "sensorDataPoints": fillDataPoints()
+        "sensorDataPoints": fillData()
     }]
     
     db.workspaces.insert_one(

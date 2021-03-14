@@ -14,6 +14,9 @@ class Timeframe(MongoModel):
     start: int = Field(..., description="start index in the sample")
     end: int = Field(..., description="end index in the sample")
 
+class DataPoint(MongoModel):
+    data: List[float]
+    timestamp: int
 
 class SampleInJson(MongoModel):
     """
@@ -23,14 +26,11 @@ class SampleInJson(MongoModel):
     id: OID
     label: str
     timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    dataPointCount: int
-    sensorDataPoints: Dict[str, List[List[float]]] = Field(..., description="Dictionary that maps sensors to their data points")
+    sensorDataPoints: Dict[str, List[DataPoint]] = Field(..., description="Dictionary that maps sensors to their data points")
     
 
 class Sample(MongoModel):
     label: str
-    timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    dataPointCount: int
     sensorDataPoints: OID = Field(...,
                                   description="Reference to pickled dictionary that maps sensors to their data points")
 

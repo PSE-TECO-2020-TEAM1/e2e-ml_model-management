@@ -1,3 +1,5 @@
+import pandas
+from app.util.sample_parser import SampleParser
 import json
 import tsfresh
 import pickle
@@ -62,25 +64,27 @@ class Trainer():
         samples = [SampleInJson(sample) for sample in json.loads(requests.get(url="").json())]
         # Validate the received samples
         # TODO instead of raising add a field (enum?) to the workspace that represents the training state
-        for sample in samples:
-            for sensor in self.workspace.sensors:
-                if sensor.name not in sample.sensorDataPoints:
-                    # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
-                    exit(-1)
-                if len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
-                    # TODO set training state of workspace: "Number of data points of sensor " + sensor.name + " from sample " + str(sample.id) + " does not match the claimed data point count"
-                    exit(-1)
-                for data_point in sample.sensorDataPoints:
-                    if len(data_point) != len(sensor.dataFormat):
-                        # TODO set training state of workspace: "At least one data point of " + sensor.name + " from sample " + str(sample.id) + " is malformed"
-                        exit(-1)
+        # for sample in samples:
+        #     for sensor in self.workspace.sensors:
+        #         if sensor.name not in sample.sensorDataPoints:
+        #             # TODO set training state of workspace: "Sensors of the sample " + str(sample.id) + " does not match the workspace sensors"
+        #             exit(-1)
+        #         if len(sample.sensorDataPoints[sensor.name]) != sample.dataPointCount:
+        #             # TODO set training state of workspace: "Number of data points of sensor " + sensor.name + " from sample " + str(sample.id) + " does not match the claimed data point count"
+        #             exit(-1)
+        #         for data_point in sample.sensorDataPoints:
+        #             if len(data_point) != len(sensor.dataFormat):
+        #                 # TODO set training state of workspace: "At least one data point of " + sensor.name + " from sample " + str(sample.id) + " is malformed"
+        #                 exit(-1)
         # Validated so save the samples to the database
+        parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
         for sample in samples:
-            result = self.fs.put(pickle.dumps(sample.sensorDataPoints))
-            sample_to_insert = Sample(label=sample.label, timeframes=sample.timeframes,
-                                      dataPointCount=sample.dataPointCount, sensorDataPoints=result).dict()
-            new_samples.append(sample_to_insert)
+            dataframes = parser.parse_sample(sample)
+            for dataframe in dataframes:
+                result = self.fs.put(pickle.dumps(dataframe))
+                sample_to_insert = Sample(label=sample.label, sensorDataPoints=result).dict()
+                new_samples.append(sample_to_insert)
         new_data = WorkspaceData(samples=new_samples, labelToLabelCode=label_to_label_code,
                                  labelCodeToLabel=label_code_to_label)
         self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"workspaceData": new_data.dict()}})
@@ -158,7 +162,7 @@ class Trainer():
                                       "$push": {"mlModels": result.inserted_id}, "$set": {"progress": -1}})
 
         print("--end--")
-        exit(0) # Clean up automatically
+        exit(0)  # Clean up automatically
 
     def __get_data_split_to_windows(self) -> SlidingWindow:
         # If already cached, retrieve from the database
@@ -179,48 +183,20 @@ class Trainer():
             "$set": {"workspaceData.slidingWindows." + str(self.window_size) + "_" + str(self.sliding_step): result.inserted_id}})
         return sliding_window
 
-    def __split_to_windows(self) -> Tuple[List[List[Dict]], List[str]]:
-        # TODO CONFIRM WE USE INDICES INSTEAD OF TIMESTAMPS FOR TIMEFRAMES
-        data_windows: List[List[Dict]] = []
+    def __split_to_windows(self) -> Tuple[List[DataFrame], List[str]]:
+        data_windows: List[DataFrame] = []
         labels_of_data_windows: List[str] = []
         for sample in self.workspace.workspaceData.samples:
-            timeframe_iterator = iter(sample.timeframes)
-            current_timeframe = next(timeframe_iterator)
-
-            # TODO FOR ÖMER: [1,2],[3,4] is not legal timeframes, use [1,4] instead
-            sensor_data_points: Dict[str, List[List[float]]] = pickle.loads(self.fs.get(sample.sensorDataPoints).read())
+            sensor_data_points: DataFrame = pickle.loads(self.fs.get(sample.sensorDataPoints).read())
             # For each window in this sample, incremented by the sliding step value starting from 0
-            for window_offset in range(0, sample.dataPointCount - self.window_size + 1, self.sliding_step):
-                while window_offset > current_timeframe.end:
-                    try:
-                        current_timeframe = next(timeframe_iterator)
-                    except:
-                        break
-                data_window_in_timeframe = window_offset >= current_timeframe.start and window_offset + \
-                    self.window_size - 1 <= current_timeframe.end
-
-                # [data_point_index][sensor_component: value]
-                data_window: List[Dict[str, float]] = [{} for _range_ in range(self.window_size)]
-
-                for sensor in self.workspace.sensors:
-                    # Data points of this sensor (time as index)
-                    data_points = sensor_data_points[sensor.name]
-                    # For each data point which is in this data window
-                    for datapoint_offset in range(0, self.window_size):
-                        # Append the values to this data window (index of values is e.g x in acc_x)
-                        data_point = data_points[window_offset+datapoint_offset]
-                        data_window[datapoint_offset].update({sensor.name + "_" + sensor.dataFormat[v]: data_point[v]
-                                                              for v in range(len(sensor.dataFormat))})
-                # Append this data window as a DataFrame to the list of all data windows
-                data_windows.append(data_window)
-                labels_of_data_windows.append(
-                    self.workspace.workspaceData.labelToLabelCode[sample.label] if data_window_in_timeframe else "0")
-
+            for window_offset in range(0, len(sensor_data_points.index) - self.window_size + 1, self.sliding_step):
+                data_windows.append(sensor_data_points.iloc[window_offset:window_offset + self.window_size])
+                labels_of_data_windows.append(sample.label)
         return (data_windows, labels_of_data_windows)
 
     def __get_extracted_features(self, sliding_window: SlidingWindow) -> DataFrame:
         extracted_features_dict = sliding_window.extractedFeatures
-        cached_extracted_features: Dict[Feature, List[Dict[str, float]]] = {}
+        cached_extracted_features: Dict[Feature, DataFrame] = {}
         not_cached_features: List[Feature] = []
         # Sorted so that we always get the same column order
         for feature in self.sorted_features:
@@ -231,11 +207,11 @@ class Trainer():
             else:
                 not_cached_features.append(feature)
 
-        newly_extracted_features: Dict[Feature, List[Dict[str, float]]]
+        newly_extracted_features: Dict[Feature, DataFrame]
 
         if not_cached_features:
-            # We have to load from the database for the case where sliding windows are cached
-            data_windows: List[List[Dict]] = pickle.loads(self.fs.get(sliding_window.dataWindows).read())
+            # We have to load from the database for the case where data windows are cached
+            data_windows: List[DataFrame] = pickle.loads(self.fs.get(sliding_window.dataWindows).read())
             newly_extracted_features = self.__extractFeatures(data_windows, not_cached_features)
             for feature in newly_extracted_features:
                 inserted_id = self.fs.put(pickle.dumps(newly_extracted_features[feature]))
@@ -245,40 +221,32 @@ class Trainer():
                                                    {"$set": {"extractedFeatures." + feature.value: result.inserted_id}})
 
         # Join them together
-        number_of_data_windows: int = None
-        dataframes: List[Dict] = None
+        dataframes = []
         for feature in self.sorted_features:
             dict_to_use = cached_extracted_features if feature in cached_extracted_features else newly_extracted_features
-            if number_of_data_windows is None:
-                number_of_data_windows = len(dict_to_use[feature])
-                dataframes = [{} for __range__ in range(number_of_data_windows)]
-            for i in range(number_of_data_windows):
-                dataframes[i].update(dict_to_use[feature][i])
+            dataframes.append(dict_to_use[feature])
+        return pandas.concat(dataframes, axis=1)
 
-        return DataFrame(dataframes)
-
-    def __extractFeatures(self, data_windows: List[List[Dict]], features: List[Feature]) -> Dict[Feature, List[Dict[str, float]]]:
-        settings = {key: ComprehensiveFCParameters()[key] for key in features}
+    def __extractFeatures(self, data_windows: List[DataFrame], features: List[Feature]) -> Dict[Feature, DataFrame]:
         newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
             f: [{} for _range_ in range(len(data_windows))] for f in features}
 
-        concatenated_data_windows: List[Dict] = []
-
+        settings = {key: ComprehensiveFCParameters()[key] for key in features}
         for data_window_index in range(len(data_windows)):
-            for i in range(len(data_windows[data_window_index])):
-                data_windows[data_window_index][i]["id"] = data_window_index
-                concatenated_data_windows.append(data_windows[data_window_index][i])
-
-        extracted = tsfresh.extract_features(
-            DataFrame(concatenated_data_windows), column_id="id", default_fc_parameters=settings, pivot=False, disable_progressbar=False)
-
+            data_windows[data_window_index]["id"] = data_window_index
+        data_windows = pandas.concat(data_windows)
+        extracted = tsfresh.extract_features(data_windows, column_id="id",
+                                             default_fc_parameters=settings, pivot=False, disable_progressbar=False)
+        # Split by columns features
         for i in range(len(extracted)):
             feature: Feature = features[i % len(features)]
             data_window_index = extracted[i][0]
             label = extracted[i][1]
             value = extracted[i][2]
             newly_extracted_features[feature][data_window_index][label] = value
-
+        # Convert to DataFrame
+        for feature in newly_extracted_features:
+            newly_extracted_features[feature] = DataFrame(newly_extracted_features[feature])
         return newly_extracted_features
 
     # TODO better way to perform pipeline steps from sklearn library? (e.g. impute, normalize, ...)
