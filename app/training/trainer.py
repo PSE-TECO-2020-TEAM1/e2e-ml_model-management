@@ -17,7 +17,7 @@ from pymongo import MongoClient
 from multiprocessing import set_start_method
 
 from app.config import get_settings
-from app.models.ml_model import MlModel, PerformanceMetrics, PerformanceMetricsPerLabel
+from app.models.ml_model import MlModel, PerformanceMetrics
 from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
 from app.models.workspace import Sample, SampleInJson, Workspace, WorkspaceData
@@ -50,9 +50,11 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def __update_workspace_samples(self):
-        token = jwt.encode({"userId": str(self.workspace.userId), "exp": datetime.utcnow() + timedelta(minutes=10)}, key=self.settings.secret_key, algorithm="HS256")
+        token = jwt.encode({"userId": str(self.workspace.userId), "exp": datetime.utcnow() +
+                            timedelta(minutes=10)}, key=self.settings.secret_key, algorithm="HS256")
         auth_header = {"Authorization": "Bearer " + token}
-        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
+        url = self.settings.workspace_management_ip_port + \
+            "/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
         last_modified: int = requests.get(url=url, headers=auth_header).json()
         print()
         if (self.workspace.workspaceData is not None) and (last_modified == self.workspace.workspaceData.lastModified):
@@ -65,7 +67,8 @@ class Trainer():
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
 
         # TODO complete api endpoint
-        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples?showDataPoints=true"
+        url = self.settings.workspace_management_ip_port+"/api/workspaces/" + \
+            str(self.workspace_id)+"/samples?showDataPoints=true"
         samples = [SampleInJson(**sample) for sample in requests.get(url=url, headers=auth_header).json()]
         print(samples[0])
         parser = SampleParser(sensors=self.workspace.sensors)
@@ -258,7 +261,7 @@ class Trainer():
         classifier_object.fit(data, labels_of_data_windows)
         return classifier_object
 
-    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int]) -> PerformanceMetricsPerLabel:
+    def __get_performance_metrics(self, classifier_object: IClassifier, test_data: DataFrame, test_labels: List[int]) -> List[PerformanceMetrics]:
         prediction = classifier_object.predict(test_data)
         result = []
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
@@ -268,4 +271,4 @@ class Trainer():
             elif label_code == "0":
                 result.append(PerformanceMetrics(label="Other", metrics=performance_metric))
 
-        return PerformanceMetricsPerLabel(metrics_of_labels=result)
+        return result

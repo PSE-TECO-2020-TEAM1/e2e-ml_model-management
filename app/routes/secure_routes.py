@@ -84,6 +84,7 @@ async def get_models(workspaceId: OID, userId=Depends(extract_userId)):
         {"_id": workspaceId, "userId": userId}, {"_id": False, "mlModels": True})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
+    print(await db.get().ml_models.find_one({"_id": {"$in": workspace_doc["mlModels"]}}))
     models = [MlModel(**model) async for model in db.get().ml_models.find({"_id": {"$in": workspace_doc["mlModels"]}})]
     return response_models.GetModelsRes(models=[model.dict(include={"id", "name"}) for model in models])
 

@@ -2,7 +2,7 @@ from pydantic.fields import Field
 from app.models.workspace import Sensor, Workspace
 from pydantic import BaseModel
 from app.models.mongo_model import MongoModel, OID
-from app.models.ml_model import MlModel, PerformanceMetricsPerLabel
+from app.models.ml_model import MlModel, PerformanceMetrics
 from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 
@@ -43,7 +43,7 @@ class GetModelRes(MongoModel):
     normalization: Normalization
     classifier: Classifier
     hyperparameters: Dict[str, Any]
-    labelPerformanceMetrics: PerformanceMetricsPerLabel
+    labelPerformanceMetrics: List[PerformanceMetrics]
 
 
 class GetPredictionConfigRes(MongoModel):
