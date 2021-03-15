@@ -13,7 +13,7 @@ class PerformanceMetrics(MongoModel):
 
 class Hyperparameter(MongoModel):
     name: str
-    value: Any
+    value: str
 
 class MlModel(MongoModel):
     id: OID = Field(None, alias="_id")
