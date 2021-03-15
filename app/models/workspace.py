@@ -46,7 +46,7 @@ class WorkspaceData(MongoModel):
     labelToLabelCode: Dict[str, str] = Field(..., description="label -> identifier_number")
     labelCodeToLabel: Dict[str, str] = Field(..., description="identifier_number -> label")
     samples: List[Sample] = Field([], description="samples are set during the training")
-    slidingWindows: Dict[str, OID] = Field([], description="window size_sliding step -> References to sliding windows")
+    slidingWindows: Dict[str, OID] = Field({}, description="window size_sliding step -> References to sliding windows")
 
 
 class Workspace(MongoModel):

@@ -54,10 +54,12 @@ class Trainer():
         auth_header = {"Authorization": "Bearer " + token}
         url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
         last_modified: int = requests.get(url=url, headers=auth_header).json()
-        if self.workspace.workspaceData is not None and last_modified == self.workspace.workspaceData.last_modified:
+        print()
+        if (self.workspace.workspaceData is not None) and (last_modified == self.workspace.workspaceData.lastModified):
             return
         url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/labels"
         label_res = requests.get(url=url, headers=auth_header).json()
+        print(label_res)
         labels: List[str] = [label["name"] for label in label_res]
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
