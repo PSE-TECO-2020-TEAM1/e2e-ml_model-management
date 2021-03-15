@@ -50,13 +50,14 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def __update_workspace_samples(self):
-        last_modified: int = requests.get(url="/api/workspaces/" + str(self.workspace_id) +
-                                          "/samples", params={"onlyDate": True})
+        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples"
+        last_modified: int = requests.get(url=, params={"onlyDate": True})
         if last_modified == self.workspace.workspaceData.last_modified:
             return
 
-        labels: List[str] = [label["name"]
-                             for label in json.loads(requests.get(url="").json())]  # TODO complete api endpoint
+        url = self.settings.workspace_management_ip_port+"/"+"api/workspaces/"+str(self.workspace_id)+"labels"
+        label_res = json.loads(requests.get(url=url).json())
+        labels: List[str] = [label["name"] for label in label_res]
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
 

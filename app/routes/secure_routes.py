@@ -52,8 +52,6 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
     if await db.get().workspaces.update_one({"_id": workspaceId, "progress": -1}, {"$set": {"progress": 0}}) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="A training for this workspace is already in progress")
 
-    # __fetch_workspace_data(workspaceId)
-
     trainer = Trainer(workspaceId, req.modelName, req.windowSize, req.slidingStep,
                       req.features, req.imputation, req.normalizer, req.classifier, req.hyperparameters)
 
@@ -71,7 +69,7 @@ async def post_train(workspaceId: OID, req: request_models.PostTrainReq, userId=
 async def get_training_progress(workspaceId: OID, userId=Depends(extract_userId)):
     workspaceId = ObjectId(workspaceId)
 
-    workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId}, {"_id": False, "progress": True})
+    workspace_doc = await db.get().workspaces.find_one({"_id": workspaceId}, {"_id": False})
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace matched for the user")
     workspace = Workspace(**workspace_doc)

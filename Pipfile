@@ -10,7 +10,6 @@ motor = "*"
 python-dotenv = "*"
 configspace = "*"
 tsfresh = "*"
-jwt = "*"
 httpx = "*"
 pyts = "*"
 

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     host: str
     port: int
     secret_key: str
+    workspace_management_ip_port: str
 
     class Config:
         env_file = ".env"

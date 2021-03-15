@@ -31,7 +31,6 @@ def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
     client.drop_database("test")
-
     samples_list1 = [{
         "label": "red",
         "sensorDataPoints": fillData()
