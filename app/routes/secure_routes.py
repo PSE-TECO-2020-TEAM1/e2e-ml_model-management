@@ -19,7 +19,7 @@ from app.models.workspace import Workspace
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
     try:
         print(Authorization)
-        decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
+        decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().AUTH_SECRET, algorithms=["HS256"])
         if "exp" not in decoded:
             raise jwt.ExpiredSignatureError
         userId = ObjectId(decoded["userId"])

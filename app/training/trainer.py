@@ -51,15 +51,15 @@ class Trainer():
 
     def __update_workspace_samples(self):
         token = jwt.encode({"userId": str(self.workspace.userId), "exp": datetime.utcnow() +
-                            timedelta(minutes=10)}, key=self.settings.secret_key, algorithm="HS256")
+                            timedelta(minutes=10)}, key=self.settings.AUTH_SECRET, algorithm="HS256")
         auth_header = {"Authorization": "Bearer " + token}
-        url = self.settings.workspace_management_ip_port + \
+        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT + \
             "/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
         last_modified: int = requests.get(url=url, headers=auth_header).json()
         print()
         if (self.workspace.workspaceData is not None) and (last_modified == self.workspace.workspaceData.lastModified):
             return
-        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/labels"
+        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/"+str(self.workspace_id)+"/labels"
         label_res = requests.get(url=url, headers=auth_header).json()
         print(label_res)
         labels: List[str] = [label["name"] for label in label_res]
@@ -67,7 +67,7 @@ class Trainer():
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
 
         # TODO complete api endpoint
-        url = self.settings.workspace_management_ip_port+"/api/workspaces/" + \
+        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/" + \
             str(self.workspace_id)+"/samples?showDataPoints=true"
         samples = [SampleInJson(**sample) for sample in requests.get(url=url, headers=auth_header).json()]
         print(samples[0])
@@ -89,8 +89,8 @@ class Trainer():
         set_start_method("fork", force=True)
 
         print("--start--")
-        self.client = MongoClient(self.settings.client_uri, self.settings.client_port)
-        self.db = self.client[self.settings.db_name]
+        self.client = MongoClient(self.settings.DATABASE_URI, self.settings.DATABASE_PORT)
+        self.db = self.client[self.settings.DATABASE_NAME]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
         self.__update_workspace_samples()

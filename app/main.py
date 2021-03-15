@@ -22,4 +22,4 @@ async def shutdown():
 
 if __name__ == "__main__":
     set_start_method("spawn") # Processes are not forked on creation (necessary for FastAPI-Uvicorn)
-    uvicorn.run(app, host=config.get_settings().host, port=config.get_settings().port)
+    uvicorn.run(app, host=config.get_settings().HOST, port=config.get_settings().PORT)

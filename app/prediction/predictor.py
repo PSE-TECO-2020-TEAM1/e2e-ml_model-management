@@ -31,8 +31,8 @@ class Predictor():
 
     def __init_objects(self):
         settings = get_settings()
-        client = MongoClient(settings.client_uri, settings.client_port)
-        db = client[settings.db_name]
+        client = MongoClient(settings.DATABASE_URI, settings.DATABASE_PORT)
+        db = client[settings.DATABASE_NAME]
         fs = GridFS(db)
         model = MlModel(**db.ml_models.find_one({"_id": self.model_id}))
 

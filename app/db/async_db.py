@@ -12,8 +12,8 @@ class AsyncDb():
         return self.db
 
     def connect_to_database(self):
-        self.client = AsyncIOMotorClient(self.settings.client_uri, self.settings.client_port)
-        self.db = self.client[self.settings.db_name]
+        self.client = AsyncIOMotorClient(self.settings.DATABASE_URI, self.settings.DATABASE_PORT)
+        self.db = self.client[self.settings.DATABASE_NAME]
 
     def disconnect_from_database(self):
         self.client.close()
