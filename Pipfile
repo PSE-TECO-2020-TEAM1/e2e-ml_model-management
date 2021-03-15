@@ -12,6 +12,7 @@ configspace = "*"
 tsfresh = "*"
 httpx = "*"
 pyts = "*"
+pyjwt = "*"
 
 [dev-packages]
 
