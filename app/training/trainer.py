@@ -93,7 +93,7 @@ class Trainer():
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        #self.__update_workspace_samples()
+        self.__update_workspace_samples()
 
         print("start split to windows")
 
@@ -146,7 +146,7 @@ class Trainer():
 
         list_of_parameters = []
         for name, value in self.hyperparameters.items():
-            list_of_parameters.append(Hyperparameter(name=name, value=value))
+            list_of_parameters.append(Hyperparameter(name=name, value=str(value)))
 
         ml_model = MlModel(name=self.model_name, workspaceId=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
                            sortedFeatures=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id,
