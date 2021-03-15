@@ -17,7 +17,7 @@ from pymongo import MongoClient
 from multiprocessing import set_start_method
 
 from app.config import get_settings
-from app.models.ml_model import MlModel, PerformanceMetrics
+from app.models.ml_model import Hyperparameter, MlModel, PerformanceMetrics
 from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
 from app.models.workspace import Sample, SampleInJson, Workspace, WorkspaceData
@@ -93,7 +93,7 @@ class Trainer():
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        self.__update_workspace_samples()
+        #self.__update_workspace_samples()
 
         print("start split to windows")
 
@@ -145,11 +145,8 @@ class Trainer():
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
 
         list_of_parameters = []
-        for parameter in self.hyperparameters:
-            name_value = {}
-            name_value["name"] = parameter
-            name_value["value"] = self.hyperparameters[parameter]
-            list_of_parameters.append(name_value)
+        for name, value in self.hyperparameters.items():
+            list_of_parameters.append(Hyperparameter(name=name, value=value))
 
         ml_model = MlModel(name=self.model_name, workspaceId=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
                            sortedFeatures=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id,

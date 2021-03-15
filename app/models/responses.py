@@ -42,7 +42,7 @@ class GetModelRes(MongoModel):
     imputation: Imputation
     normalization: Normalization
     classifier: Classifier
-    hyperparameters: Dict[str, Any]
+    hyperparameters: List[Dict]
     labelPerformanceMetrics: List[PerformanceMetrics]
 
 

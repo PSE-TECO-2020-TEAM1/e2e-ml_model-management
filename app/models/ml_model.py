@@ -11,6 +11,10 @@ class PerformanceMetrics(MongoModel):
     label: str
     metrics: Dict[PerformanceMetric, float]
 
+class Hyperparameter(MongoModel):
+    name: str
+    value: Any
+
 class MlModel(MongoModel):
     id: OID = Field(None, alias="_id")
     name: str
@@ -24,7 +28,7 @@ class MlModel(MongoModel):
     normalizerObject: OID
     classifier: Classifier
     classifierObject: OID
-    hyperparameters: Dict[str, Any]
+    hyperparameters: List[Dict]
     labelPerformanceMetrics: List[PerformanceMetrics]
     columnOrder: List[str]
     sensors: List[Sensor]
