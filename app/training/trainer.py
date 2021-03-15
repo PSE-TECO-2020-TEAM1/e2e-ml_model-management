@@ -17,7 +17,7 @@ from pymongo import MongoClient
 from multiprocessing import set_start_method
 
 from app.config import get_settings
-from app.models.ml_model import Hyperparameter, MlModel, PerformanceMetrics
+from app.models.ml_model import Hyperparameter, MlModel, PerformanceMetrics, SingleMetric
 from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
 from app.models.workspace import Sample, SampleInJson, Workspace, WorkspaceData
@@ -269,10 +269,13 @@ class Trainer():
         prediction = classifier_object.predict(test_data)
         result = []
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
+            metrics = []
+            for name, score in performance_metric.items():
+                metrics.append(SingleMetric(name=name, score=score))
             if label_code in self.workspace.workspaceData.labelCodeToLabel:
                 label = self.workspace.workspaceData.labelCodeToLabel[label_code]
-                result.append(PerformanceMetrics(label=label, metrics=performance_metric))
+                result.append(PerformanceMetrics(label=label, metrics=metrics))
             elif label_code == "0":
-                result.append(PerformanceMetrics(label="Other", metrics=performance_metric))
+                result.append(PerformanceMetrics(label="Other", metrics=metrics))
 
         return result

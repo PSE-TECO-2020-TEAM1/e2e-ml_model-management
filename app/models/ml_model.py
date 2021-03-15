@@ -6,10 +6,13 @@ from typing import Any, Dict, List
 from app.models.mongo_model import OID, MongoModel
 from app.util.performance_metrics import PerformanceMetric
 
+class SingleMetric(MongoModel):
+    name: str
+    score: int
 
 class PerformanceMetrics(MongoModel):
     label: str
-    metrics: Dict[PerformanceMetric, float]
+    metrics: List[SingleMetric]
 
 class Hyperparameter(MongoModel):
     name: str
