@@ -269,6 +269,9 @@ class Trainer():
         prediction = classifier_object.predict(test_data)
         result = []
         for label_code, performance_metric in classification_report(test_labels, prediction, output_dict=True).items():
+            # Last element is always a float that represents what???
+            if type(performance_metric) is not dict:
+                continue
             metrics = []
             for name, score in performance_metric.items():
                 metrics.append(SingleMetric(name=name, score=score))

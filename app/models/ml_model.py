@@ -8,7 +8,7 @@ from app.util.performance_metrics import PerformanceMetric
 
 class SingleMetric(MongoModel):
     name: str
-    score: int
+    score: float
 
 class PerformanceMetrics(MongoModel):
     label: str
