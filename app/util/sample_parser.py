@@ -12,35 +12,42 @@ class SampleParser():
     def parse_sample(self, sample: SampleInJson) -> List[DataFrame]:
         data_by_timeframe = self.split_data_by_timeframe(sample)
         dataframes_of_timeframes: List[DataFrame] = []
-        for timeframe in data_by_timeframe.keys():
-            dataframes_of_timeframes.append(self.parse_timeframe(data_by_timeframe[timeframe]))
+        for timeframe in data_by_timeframe:
+            print(timeframe)
+            dataframe_of_timeframe = self.parse_timeframe(sample.timeFrames[timeframe], data_by_timeframe[timeframe])
+            dataframes_of_timeframes.append(dataframe_of_timeframe)
         return dataframes_of_timeframes
 
     def split_data_by_timeframe(self, sample: SampleInJson) -> Dict[Timeframe, Dict[str, List[DataPoint]]]:
         # Build key index for binary search
         sensor_timestamps = {}
-        for sensor in self.sensors:
-            datapoints: List[DataPoint] = sample.sensorDataPoints[sensor.name]
-            sensor_timestamps[sensor.name] = [datapoint.timestamp for datapoint in datapoints]
+        for i in range(len(sample.sensorDataPoints)):
+            sensorName = sample.sensorDataPoints[i].sensorName
+            datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
+            sensor_timestamps[sensorName] = [datapoint.timestamp for datapoint in datapoints]
 
         data_by_timeframe = {}
-        for timeframe in sample.timeframes:
+        for i in range(len(sample.timeFrames)):
+            timeframe = sample.timeFrames[i]
             data_in_timeframe = {}
-            for sensor in self.sensors:
-                left = bisect.bisect_left(sensor_timestamps[sensor.name], timeframe.start)
-                right = bisect.bisect_left(sensor_timestamps[sensor.name], timeframe.end)
-                data_in_timeframe[sensor.name] = sample.sensorDataPoints[sensor.name][left:right]
-            data_by_timeframe[timeframe] = data_in_timeframe
+            for j in range(len(sample.sensorDataPoints)):
+                sensorName = sample.sensorDataPoints[j].sensorName
+                left = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.start)
+                right = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.end)
+                data_in_timeframe[sensorName] = sample.sensorDataPoints[j].dataPoints[left:right]
+            data_by_timeframe[i] = data_in_timeframe
         return data_by_timeframe
 
     def parse_timeframe(self, timeframe: Timeframe, sensor_data_points: Dict[str, List[DataPoint]]) -> DataFrame:
-        dataframe_data: List[Dict[str, float]] = []
+        target_len = int((timeframe.end - timeframe.start) / self.delta)
+        print(self.delta)
+        dataframe_data: List[Dict[str, float]] = [{} for __range__ in range(target_len)]
         for sensor in self.sensors:
-            interpolated = self.interpolate_sensor_datapoints(sensor_data_points[sensor], len(sensor.dataFormat), timeframe.start, timeframe.en)
-            for datapoint_index in range(len(interpolated)):
+            interpolated = self.interpolate_sensor_datapoints(sensor_data_points[sensor.name], len(sensor.dataFormat), timeframe.start, timeframe.end)
+            for datapoint_index in range(target_len):                
                 for format_index in range(len(sensor.dataFormat)):
-                    row = dataframe_data[datapoint_index]
-                    row[sensor.name + "_" + sensor.dataFormat[format_index]] = interpolated[datapoint_index][format_index]
+                    key = sensor.name + "_" + sensor.dataFormat[format_index]
+                    dataframe_data[datapoint_index][key] = interpolated[datapoint_index][format_index]
         return DataFrame(dataframe_data)
 
     def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, start: int, end: int) -> List[List[float]]:
@@ -49,6 +56,8 @@ class SampleParser():
             datapoint.timestamp -= start
             
         result: List[List[float]] = []
+        if len(datapoints) == 0:
+            return result
         hi = 0
         i = 0
         target_len = int((end - start) / self.delta)

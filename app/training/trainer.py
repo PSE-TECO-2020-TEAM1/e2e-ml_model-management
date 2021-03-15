@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import jwt
 import pandas
 from app.util.sample_parser import SampleParser
 import json
@@ -13,8 +15,6 @@ from sklearn.metrics import classification_report
 from sklearn.utils import shuffle
 from pymongo import MongoClient
 from multiprocessing import set_start_method
-from fastapi.exceptions import HTTPException
-from starlette import status
 
 from app.config import get_settings
 from app.models.ml_model import MlModel, PerformanceMetrics, PerformanceMetricsPerLabel
@@ -50,19 +50,22 @@ class Trainer():
         self.sliding_step = sliding_step
 
     def __update_workspace_samples(self):
-        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples"
-        last_modified: int = requests.get(url=, params={"onlyDate": True})
-        if last_modified == self.workspace.workspaceData.last_modified:
+        token = jwt.encode({"userId": str(self.workspace.userId), "exp": datetime.utcnow() + timedelta(minutes=10)}, key=self.settings.secret_key, algorithm="HS256")
+        auth_header = {"Authorization": "Bearer " + token}
+        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
+        last_modified: int = requests.get(url=url, headers=auth_header).json()
+        if self.workspace.workspaceData is not None and last_modified == self.workspace.workspaceData.last_modified:
             return
-
-        url = self.settings.workspace_management_ip_port+"/"+"api/workspaces/"+str(self.workspace_id)+"labels"
-        label_res = json.loads(requests.get(url=url).json())
+        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/labels"
+        label_res = requests.get(url=url, headers=auth_header).json()
         labels: List[str] = [label["name"] for label in label_res]
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
 
         # TODO complete api endpoint
-        samples = [SampleInJson(sample) for sample in json.loads(requests.get(url="").json())]
+        url = self.settings.workspace_management_ip_port+"/api/workspaces/"+str(self.workspace_id)+"/samples?showDataPoints=true"
+        samples = [SampleInJson(**sample) for sample in requests.get(url=url, headers=auth_header).json()]
+        print(samples[0])
         parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
         for sample in samples:
@@ -71,7 +74,7 @@ class Trainer():
                 result = self.fs.put(pickle.dumps(dataframe))
                 sample_to_insert = Sample(label=sample.label, sensorDataPoints=result).dict()
                 new_samples.append(sample_to_insert)
-        new_data = WorkspaceData(samples=new_samples, labelToLabelCode=label_to_label_code,
+        new_data = WorkspaceData(samples=new_samples, lastModified=last_modified, labelToLabelCode=label_to_label_code,
                                  labelCodeToLabel=label_code_to_label)
         self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"workspaceData": new_data.dict()}})
         self.workspace.workspaceData = new_data
@@ -85,7 +88,7 @@ class Trainer():
         self.db = self.client[self.settings.db_name]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        # TODO: put back in self.__update_workspace_samples()
+        self.__update_workspace_samples()
 
         print("start split to windows")
 

@@ -1,12 +1,10 @@
 from multiprocessing.context import Process
 import jwt
-import json
 import uuid
 from starlette.responses import Response
 from typing import Dict, List
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
-from httpx import AsyncClient
 from bson import ObjectId
 
 from app.models.ml_model import MlModel
@@ -16,17 +14,16 @@ from app.config import get_settings
 from app.training.trainer import Trainer
 from app.db import db
 from app.models.mongo_model import OID
-from app.models.workspace import Workspace, SampleInJson, WorkspaceData
+from app.models.workspace import Workspace
 
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
-    decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
     try:
-        print(get_settings().secret_key)
+        print(Authorization)
         decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().secret_key, algorithms=["HS256"])
-        print(decoded)
         if "exp" not in decoded:
             raise jwt.ExpiredSignatureError
-        return ObjectId(decoded["userId"])
+        userId = ObjectId(decoded["userId"])
+        return userId
     except:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 

@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from scipy.sparse import data
+
 from app.models.mongo_model import OID, MongoModel
 from pydantic import Field
 
@@ -18,15 +20,19 @@ class DataPoint(MongoModel):
     data: List[float]
     timestamp: int
 
+class DataPointsPerSensor(MongoModel):
+    sensorName: str
+    dataPoints: List[DataPoint]
+
 class SampleInJson(MongoModel):
     """
     The only difference from the Sample class is the sensorDataPoints field and the id. We receive the sample over network as
     normal dictionary, but save the sample in database after the validation as pickled dictionary. 
     """
-    id: OID
     label: str
-    timeframes: List[Timeframe] = Field(..., description="Valid intervals of the sample")
-    sensorDataPoints: Dict[str, List[DataPoint]] = Field(..., description="Dictionary that maps sensors to their data points")
+    timeFrames: List[Timeframe] = Field(..., description="Valid intervals of the sample")
+    sensorDataPoints: List[DataPointsPerSensor] = Field(..., description="Dictionary that maps sensors to their data points")
+
     
 
 class Sample(MongoModel):
@@ -36,7 +42,7 @@ class Sample(MongoModel):
 
 
 class WorkspaceData(MongoModel):
-    last_modified: int = Field(..., description="Unix Timestamp")
+    lastModified: int = Field(..., description="Unix Timestamp")
     labelToLabelCode: Dict[str, str] = Field(..., description="label -> identifier_number")
     labelCodeToLabel: Dict[str, str] = Field(..., description="identifier_number -> label")
     samples: List[Sample] = Field([], description="samples are set during the training")
