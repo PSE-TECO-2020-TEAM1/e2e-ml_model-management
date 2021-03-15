@@ -144,10 +144,17 @@ class Trainer():
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))
 
+        list_of_parameters = []
+        for parameter in self.hyperparameters:
+            name_value = {}
+            name_value["name"] = parameter
+            name_value["value"] = self.hyperparameters[parameter]
+            list_of_parameters.append(name_value)
+
         ml_model = MlModel(name=self.model_name, workspaceId=self.workspace_id, windowSize=self.window_size, slidingStep=self.sliding_step,
                            sortedFeatures=self.sorted_features, imputation=self.imputation, imputerObject=imputer_object_db_id,
                            normalization=self.normalizer, normalizerObject=normalizer_object_db_id, classifier=self.classifier,
-                           classifierObject=classifier_object_db_id, hyperparameters=self.hyperparameters, labelPerformanceMetrics=performance_metrics,
+                           classifierObject=classifier_object_db_id, hyperparameters=list_of_parameters, labelPerformanceMetrics=performance_metrics,
                            columnOrder=train_data.columns.tolist(), sensors=self.workspace.sensors, labelCodeToLabel=self.workspace.workspaceData.labelCodeToLabel)
 
         result = self.db.ml_models.insert_one(ml_model.dict(exclude_none=True))
