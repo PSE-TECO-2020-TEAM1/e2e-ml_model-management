@@ -63,7 +63,10 @@ class Trainer():
 
         url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+ "/api/workspaces/" + str(self.workspace_id) + "/samples?showDataPoints=true"
         received_samples = requests.get(url=url, headers=auth_header).json()
-        received_samples["sensor"] = received_samples.pop("sensorName")
+        for sample in received_samples:
+            for sensor_type in sample["sensorDataPoints"]:
+                sensor_type["sensorDataPoints"]["sensor"] = sensor_type.pop("sensorName")
+
         samples = [SampleInJson(**sample) for sample in received_samples]
         parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
