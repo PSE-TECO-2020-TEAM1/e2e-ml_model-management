@@ -92,7 +92,7 @@ class Predictor():
             predictions = self.__predict(data_windows)
             translated_predictions = []
             for prediction in predictions:
-                translated = self.label_code_to_label[prediction] if prediction != "0" else "Other"
+                translated = self.label_code_to_label[prediction]
                 translated_predictions.append(translated)
             predictor_end.send(PredictionResult(labels=translated_predictions, start=entry.start, end=entry.end))
 

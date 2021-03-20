@@ -9,7 +9,7 @@ from pymongo.mongo_client import MongoClient
 
 uri = 'mongodb://0.0.0.0/'
 client = MongoClient(uri, 27017)
-db = client.test
+db = client.modelmanagement_test
 fs = GridFS(db)
 
 DATA_POINTS = 1000
@@ -30,7 +30,7 @@ def fillData():
 def runtest():
     workspace_id = ObjectId('666f6f2d6261722d71757578')
     user_id = ObjectId('666f6f2d6261722d71757578')
-    client.drop_database("test")
+    client.drop_database("modelmanagement_test")
     samples_list1 = [{
         "label": "red",
         "sensorDataPoints": fillData()

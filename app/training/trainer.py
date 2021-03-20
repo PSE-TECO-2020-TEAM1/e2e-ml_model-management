@@ -61,7 +61,7 @@ class Trainer():
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
         label_code_to_label["0"] = "Other"
 
-        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/" + str(self.workspace_id) + "/samples?showDataPoints=true"
+        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+ "/api/workspaces/" + str(self.workspace_id) + "/samples?showDataPoints=true"
         samples = [SampleInJson(**sample) for sample in requests.get(url=url, headers=auth_header).json()]
         parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
@@ -90,7 +90,7 @@ class Trainer():
         self.db = self.client[self.settings.DATABASE_NAME]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        self.__update_workspace_samples()
+        #self.__update_workspace_samples()
 
         print("start split to windows")
 
@@ -272,7 +272,8 @@ class Trainer():
             metrics = []
             for name, score in performance_metric.items():
                 metrics.append(SingleMetric(name=name, score=score))
-            label = self.workspace.workspaceData.labelCodeToLabel[label_code]
-            result.append(PerformanceMetrics(label=label, metrics=metrics))
+            if label_code in self.workspace.workspaceData.labelCodeToLabel:            
+                label = self.workspace.workspaceData.labelCodeToLabel[label_code]
+                result.append(PerformanceMetrics(label=label, metrics=metrics))
 
         return result

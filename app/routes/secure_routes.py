@@ -2,7 +2,6 @@ from multiprocessing.context import Process
 import jwt
 import uuid
 from starlette.responses import Response
-from typing import Dict, List
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.param_functions import Depends
 from bson import ObjectId
@@ -18,7 +17,6 @@ from app.models.workspace import Workspace
 
 async def extract_userId(Authorization: str = Header(None)) -> ObjectId:
     try:
-        print(Authorization)
         decoded = jwt.decode(jwt=Authorization.split()[1], key=get_settings().AUTH_SECRET, algorithms=["HS256"])
         if "exp" not in decoded:
             raise jwt.ExpiredSignatureError
