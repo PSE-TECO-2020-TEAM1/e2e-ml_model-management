@@ -1,24 +1,50 @@
 import bisect
 from typing import Dict, List
+from numpy import invert
 from pandas.core.frame import DataFrame
 from app.models.workspace import DataPoint, SampleInJson, Sensor, Timeframe
 
+class ParsedSample():
+    def __init__(self, positive: List[DataFrame], negative: List[DataFrame]):
+        self.positive = positive
+        self.negative = negative
 
 class SampleParser():
     def __init__(self, sensors: List[Sensor]):
         self.sensors = sensors
         self.delta = 1000 / max(sensor.samplingRate for sensor in sensors)
 
-    def parse_sample(self, sample: SampleInJson) -> List[DataFrame]:
+    def parse_sample(self, sample: SampleInJson) -> ParsedSample:
         data_by_timeframe = self.split_data_by_timeframe(sample)
-        dataframes_of_timeframes: List[DataFrame] = []
-        for timeframe in data_by_timeframe:
-            print(timeframe)
-            dataframe_of_timeframe = self.parse_timeframe(sample.timeFrames[timeframe], data_by_timeframe[timeframe])
-            dataframes_of_timeframes.append(dataframe_of_timeframe)
-        return dataframes_of_timeframes
+        dataframes_of_positive: List[DataFrame] = []
+        for i in data_by_timeframe:
+            dataframe_of_timeframe = self.parse_timeframe(sample.timeFrames[i], data_by_timeframe[i])
+            dataframes_of_positive.append(dataframe_of_timeframe)
 
-    def split_data_by_timeframe(self, sample: SampleInJson) -> Dict[Timeframe, Dict[str, List[DataPoint]]]:
+        self.invert_timeframes(sample)
+        data_by_timeframe = self.split_data_by_timeframe(sample)
+        dataframes_of_negative: List[DataFrame] = []
+        for i in data_by_timeframe:
+            dataframe_of_timeframe = self.parse_timeframe(sample.timeFrames[i], data_by_timeframe[i])
+            dataframes_of_negative.append(dataframe_of_timeframe)
+        return ParsedSample(positive=dataframes_of_positive, negative=dataframes_of_negative)
+
+
+    def invert_timeframes(self, sample: SampleInJson):
+        timeframes = sample.timeFrames
+        inverted_timeframes: List[Timeframe] = []
+        # Add the beginning and the end
+        if sample.start - timeframes[0].start > 0:
+            inverted_timeframes.append(Timeframe(start=sample.start, end=timeframes[0].start))
+        if sample.end - timeframes[-1].end > 0:
+            inverted_timeframes.append(Timeframe(start=sample.end - timeframes[-1].end))
+        # Handle rest
+        for i in range(len(timeframes) - 1):
+            between_two = Timeframe(start=timeframes[i].end, end=timeframes[i+1].start)
+            inverted_timeframes.append(between_two)
+        sample.timeFrames = inverted_timeframes
+
+    def split_data_by_timeframe(self, sample: SampleInJson) -> Dict[int, Dict[str, List[DataPoint]]]:
         # Build key index for binary search
         sensor_timestamps = {}
         for i in range(len(sample.sensorDataPoints)):

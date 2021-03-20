@@ -13,6 +13,8 @@ tsfresh = "*"
 httpx = "*"
 pyts = "*"
 pyjwt = "*"
+pytest = "*"
+autopep8 = "*"
 
 [dev-packages]
 

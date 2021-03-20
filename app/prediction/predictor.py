@@ -1,5 +1,5 @@
 from app.util.sample_parser import SampleParser
-from app.models.workspace import DataPoint
+from app.models.workspace import DataPoint, DataPointsPerSensor
 import tsfresh
 import pickle
 from collections import deque
@@ -20,10 +20,11 @@ from app.util.ml_objects import IClassifier, IImputer, INormalizer
 
 
 class PredictorEntry():
-    def __init__(self, datapoints: Dict[str, List[DataPoint]], start: int, end: int):
-        self.datapoints = datapoints
+    def __init__(self, sensorDataPoints: List[DataPointsPerSensor], start: int, end: int):
+        self.sensorDataPoints: Dict[str, List[DataPoint]] = {i.sensorName: i.dataPoints for i in sensorDataPoints}
         self.start = start
         self.end = end
+
 
 class Predictor():
     def __init__(self, model_id: OID):
@@ -54,7 +55,7 @@ class Predictor():
         set_start_method("fork", force=True)
 
         self.__init_objects()
-        
+
         parser = SampleParser(self.sensors)
         last_window: Deque[Dict[str, float]] = deque()
         while True:
@@ -62,18 +63,19 @@ class Predictor():
                 pass
 
             entry: PredictorEntry = predictor_end.recv()
-            if not self.__valid_entry(entry.datapoints):
-                # TODO write -1 to the pipe maybe? or we can even pass the error message since pipe objects are all strings 
+            if not self.__valid_entry(entry.sensorDataPoints):
+                # TODO write -1 to the pipe maybe? or we can even pass the error message since pipe objects are all strings
                 continue
             for sensor in self.sensors:
-                entry.datapoints[sensor.name] = parser.interpolate_sensor_datapoints(entry.datapoints[sensor.name], len(sensor.dataFormat), entry.start, entry.end)
+                entry.sensorDataPoints[sensor.name] = parser.interpolate_sensor_datapoints(
+                    entry.sensorDataPoints[sensor.name], len(sensor.dataFormat), entry.start, entry.end)
             data_windows: List[List[Dict]] = []
             datapoint_count = int((entry.end - entry.start) / parser.delta)
             while datapoint_count > 0:
                 split_data_point: Dict[str, float] = {}
                 for sensor in self.sensors:
                     for i in range(len(sensor.dataFormat)):
-                        split_data_point[sensor.name + "_" + sensor.dataFormat[i]] = entry.datapoints[sensor.name][-datapoint_count][i]
+                        split_data_point[sensor.name + "_" + sensor.dataFormat[i]] = entry.sensorDataPoints[sensor.name][-datapoint_count][i]
                 datapoint_count -= 1
                 last_window.append(split_data_point)
                 if len(last_window) == self.window_size:
@@ -95,13 +97,12 @@ class Predictor():
                 if len(data_point.data) != len(sensor.dataFormat):
                     return False
         return True
-        
 
     def __predict(self, pipeline_data: List[List[Dict]]) -> List[int]:
         pipeline_data = self.__preprocess(pipeline_data)
         return self.classifier_object.predict(pipeline_data)
 
-    def __preprocess(self, pipeline_data: List[List[Dict]]) -> DataFrame: # List[List[DataPoint]]
+    def __preprocess(self, pipeline_data: List[List[Dict]]) -> DataFrame:  # List[List[DataPoint]]
         pipeline_data = self.__extract_features(pipeline_data)
         pipeline_data = self.__impute(pipeline_data)
         pipeline_data = self.__normalize(pipeline_data)
@@ -113,7 +114,7 @@ class Predictor():
             for i in range(len(pipeline_data[data_window_index])):
                 pipeline_data[data_window_index][i]["id"] = data_window_index
                 concatenated_data_windows.append(pipeline_data[data_window_index][i])
-                
+
         settings = {key: ComprehensiveFCParameters()[key] for key in self.sorted_features}
         extracted = tsfresh.extract_features(DataFrame(concatenated_data_windows), column_id="id",
                                              default_fc_parameters=settings, disable_progressbar=True)

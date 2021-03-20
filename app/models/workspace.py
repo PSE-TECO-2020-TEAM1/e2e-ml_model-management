@@ -1,7 +1,5 @@
 from typing import Dict, List
 
-from scipy.sparse import data
-
 from app.models.mongo_model import OID, MongoModel
 from pydantic import Field
 
@@ -30,6 +28,8 @@ class SampleInJson(MongoModel):
     normal dictionary, but save the sample in database after the validation as pickled dictionary. 
     """
     label: str
+    start: int
+    end: int
     timeFrames: List[Timeframe] = Field(..., description="Valid intervals of the sample")
     sensorDataPoints: List[DataPointsPerSensor] = Field(..., description="Dictionary that maps sensors to their data points")
 

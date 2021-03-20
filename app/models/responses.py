@@ -1,10 +1,8 @@
 from pydantic.fields import Field
-from app.models.workspace import Sensor, Workspace
-from pydantic import BaseModel
+from app.models.workspace import Sensor
 from app.models.mongo_model import MongoModel, OID
-from app.models.ml_model import MlModel, PerformanceMetrics
+from app.models.ml_model import PerformanceMetrics
 from typing import Any, Dict, List, Tuple
-from pydantic import BaseModel
 
 from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
 

@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
 import jwt
 import pandas
-from app.util.sample_parser import SampleParser
-import json
 import tsfresh
 import pickle
 import requests
+from datetime import datetime, timedelta
 from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
 from pymongo.database import Database
@@ -22,9 +20,9 @@ from app.models.cached_data import ExtractedFeature, SlidingWindow
 from app.models.mongo_model import OID
 from app.models.workspace import Sample, SampleInJson, Workspace, WorkspaceData
 from app.training.factory import get_classifier, get_imputer, get_normalizer
+from app.util.sample_parser import SampleParser
 from app.util.ml_objects import IClassifier, IImputer, INormalizer
-from app.util.training_parameters import (Classifier, Feature, Imputation,
-                                          Normalization)
+from app.util.training_parameters import Classifier, Feature, Imputation, Normalization
 
 
 class Trainer():
@@ -32,12 +30,8 @@ class Trainer():
     def __init__(self, workspace_id: OID, model_name: str, window_size: int, sliding_step: int, features: List[Feature], imputation: Imputation,
                  normalizer: Normalization, classifier: Classifier, hyperparameters: Dict[str, Any]):
         # TODO wrapper for config?
-        self.client: MongoClient
-        self.db: Database
-        self.fs: GridFS
-        self.workspace: Workspace
         self.settings = get_settings()
-
+        
         self.progress: int = 0  # percentage
         self.workspace_id = workspace_id
         self.model_name = model_name
@@ -56,29 +50,32 @@ class Trainer():
         url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT + \
             "/api/workspaces/"+str(self.workspace_id)+"/samples?onlyDate=true"
         last_modified: int = requests.get(url=url, headers=auth_header).json()
-        print()
         if (self.workspace.workspaceData is not None) and (last_modified == self.workspace.workspaceData.lastModified):
             return
         url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/"+str(self.workspace_id)+"/labels"
         label_res = requests.get(url=url, headers=auth_header).json()
-        print(label_res)
+
         labels: List[str] = [label["name"] for label in label_res]
         label_to_label_code: Dict[str, str] = {labels[i]: str(i+1) for i in range(len(labels))}
+        label_to_label_code["Other"] = "0"
         label_code_to_label: Dict[str, str] = {str(i+1): labels[i] for i in range(len(labels))}
+        label_code_to_label["0"] = "Other"
 
-        # TODO complete api endpoint
-        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/" + \
-            str(self.workspace_id)+"/samples?showDataPoints=true"
+        url = self.settings.WORKSPACE_MANAGEMENT_IP_PORT+"/api/workspaces/" + str(self.workspace_id) + "/samples?showDataPoints=true"
         samples = [SampleInJson(**sample) for sample in requests.get(url=url, headers=auth_header).json()]
-        print(samples[0])
         parser = SampleParser(sensors=self.workspace.sensors)
         new_samples: List[Sample] = []
         for sample in samples:
-            dataframes = parser.parse_sample(sample)
-            for dataframe in dataframes:
+            parsed = parser.parse_sample(sample)
+            for dataframe in parsed.positive:
                 result = self.fs.put(pickle.dumps(dataframe))
                 sample_to_insert = Sample(label=sample.label, sensorDataPoints=result).dict()
                 new_samples.append(sample_to_insert)
+            for dataframe in parsed.negative:
+                result = self.fs.put(pickle.dumps(dataframe))
+                sample_to_insert = Sample(label="Other", sensorDataPoints=result).dict()
+                new_samples.append(sample_to_insert)
+
         new_data = WorkspaceData(samples=new_samples, lastModified=last_modified, labelToLabelCode=label_to_label_code,
                                  labelCodeToLabel=label_code_to_label)
         self.db.workspaces.update_one({"_id": self.workspace_id}, {"$set": {"workspaceData": new_data.dict()}})
@@ -275,10 +272,7 @@ class Trainer():
             metrics = []
             for name, score in performance_metric.items():
                 metrics.append(SingleMetric(name=name, score=score))
-            if label_code in self.workspace.workspaceData.labelCodeToLabel:
-                label = self.workspace.workspaceData.labelCodeToLabel[label_code]
-                result.append(PerformanceMetrics(label=label, metrics=metrics))
-            elif label_code == "0":
-                result.append(PerformanceMetrics(label="Other", metrics=metrics))
+            label = self.workspace.workspaceData.labelCodeToLabel[label_code]
+            result.append(PerformanceMetrics(label=label, metrics=metrics))
 
         return result
