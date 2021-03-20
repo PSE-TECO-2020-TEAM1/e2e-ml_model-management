@@ -42,11 +42,18 @@ async def get_prediction_config(predictionId: str):
 @router.post("/submitData", status_code=status.HTTP_200_OK)
 async def post_submit_data(req: request_models.PostSubmitDataReq):
     # TODO here properly with checks etc...
-    # TODO sensor data points here
     prediction_manager.submit_data(req.predictionId, req.sensorDataPoints, req.start, req.end)
 
 @router.get("/predictionResults", response_model=response_models.GetPredictionResultsRes, status_code=HTTP_200_OK)
 async def get_prediction_results(predictionId: str):
     # TODO here properly with checks etc...
-    results = response_models.GetPredictionResultsRes(predictions=prediction_manager.get_prediction_results(predictionId))
-    return results
+    results = prediction_manager.get_prediction_results(predictionId)
+    # TODO
+    # We are currently merging the results into one, assuming there is no gap between two neighbor results' end and start
+    # It might be better to handle the individual results on the web client
+    # Remove this part and just return results as List if decide to do that
+    labels = []
+    for result in results:
+        labels += result.labels
+    return response_models.GetPredictionResultsRes(labels=labels, start=results[0].start, end=results[-1].end)
+    # End

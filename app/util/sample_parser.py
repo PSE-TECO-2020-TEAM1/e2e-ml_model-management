@@ -48,7 +48,7 @@ class SampleParser():
         # Build key index for binary search
         sensor_timestamps = {}
         for i in range(len(sample.sensorDataPoints)):
-            sensorName = sample.sensorDataPoints[i].sensorName
+            sensorName = sample.sensorDataPoints[i].sensor
             datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
             sensor_timestamps[sensorName] = [datapoint.timestamp for datapoint in datapoints]
 
@@ -57,7 +57,7 @@ class SampleParser():
             timeframe = sample.timeFrames[i]
             data_in_timeframe = {}
             for j in range(len(sample.sensorDataPoints)):
-                sensorName = sample.sensorDataPoints[j].sensorName
+                sensorName = sample.sensorDataPoints[j].sensor
                 left = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.start)
                 right = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.end)
                 data_in_timeframe[sensorName] = sample.sensorDataPoints[j].dataPoints[left:right]

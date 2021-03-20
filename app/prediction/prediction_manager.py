@@ -1,11 +1,11 @@
-from app.models.workspace import DataPoint, DataPointsPerSensor
+from app.models.workspace import DataPointsPerSensor
 from multiprocessing import Semaphore
 from multiprocessing.synchronize import Semaphore as SemaphoreType
 from multiprocessing import Process, Pipe
 from multiprocessing.connection import Connection
 from typing import Any, Dict, List
 
-from app.prediction.predictor import Predictor, PredictorEntry
+from app.prediction.predictor import PredictionResult, Predictor, PredictorEntry
 from app.models.mongo_model import OID
 
 
@@ -44,8 +44,8 @@ class PredictionManager():
         self.prediction_id_to_util[prediction_id].manager_end.send(entry)
         self.prediction_id_to_util[prediction_id].semaphore.release()
 
-    def get_prediction_results(self, prediction_id: OID) -> List[str]:
-        results: List[str] = []
+    def get_prediction_results(self, prediction_id: OID) -> List[PredictionResult]:
+        results: List[PredictionResult] = []
         result_pipe = self.prediction_id_to_util[prediction_id].manager_end
         while result_pipe.poll():
             results.append(result_pipe.recv())

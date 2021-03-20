@@ -56,4 +56,6 @@ class GetPredictionIdRes(MongoModel):
     predictionId: str
 
 class GetPredictionResultsRes(MongoModel):
-    predictions: List[str]
+    labels: List[str]
+    start: int
+    end: int

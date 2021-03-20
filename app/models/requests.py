@@ -4,7 +4,7 @@ from pydantic import validator
 from pydantic.fields import Field
 
 from app.models.mongo_model import OID, MongoModel
-from app.models.workspace import DataPoint, DataPointsPerSensor, Sensor
+from app.models.workspace import DataPointsPerSensor, Sensor
 from app.util.classifier_config_spaces import config_spaces
 from app.util.training_parameters import (Classifier, Feature, Imputation,
                                           Normalization)

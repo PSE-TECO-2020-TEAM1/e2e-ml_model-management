@@ -19,7 +19,7 @@ class DataPoint(MongoModel):
     timestamp: int
 
 class DataPointsPerSensor(MongoModel):
-    sensorName: str
+    sensor: str
     dataPoints: List[DataPoint]
 
 class SampleInJson(MongoModel):

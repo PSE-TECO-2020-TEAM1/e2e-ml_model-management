@@ -21,10 +21,15 @@ from app.util.ml_objects import IClassifier, IImputer, INormalizer
 
 class PredictorEntry():
     def __init__(self, sensorDataPoints: List[DataPointsPerSensor], start: int, end: int):
-        self.sensorDataPoints: Dict[str, List[DataPoint]] = {i.sensorName: i.dataPoints for i in sensorDataPoints}
+        self.sensorDataPoints: Dict[str, List[DataPoint]] = {i.sensor: i.dataPoints for i in sensorDataPoints}
         self.start = start
         self.end = end
 
+class PredictionResult():
+    def __init__(self, labels: List[str], start: int, end: int):
+        self.labels = labels
+        self.start = start
+        self.end = end
 
 class Predictor():
     def __init__(self, model_id: OID):
@@ -85,9 +90,11 @@ class Predictor():
             if len(data_windows) == 0:
                 continue
             predictions = self.__predict(data_windows)
+            translated_predictions = []
             for prediction in predictions:
-                translated_prediction = self.label_code_to_label[prediction] if prediction != "0" else "Other"
-                predictor_end.send(translated_prediction)
+                translated = self.label_code_to_label[prediction] if prediction != "0" else "Other"
+                translated_predictions.append(translated)
+            predictor_end.send(PredictionResult(labels=translated_predictions, start=entry.start, end=entry.end))
 
     def __valid_entry(self, data: Dict[str, List[DataPoint]]):
         for sensor in self.sensors:
