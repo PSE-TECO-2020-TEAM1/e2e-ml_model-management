@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y gcc
 # Install python dependencies in /.venv
 COPY Pipfile .
 COPY Pipfile.lock .
-RUN pipenv install
+RUN pipenv install --skip-lock
 
 FROM base AS runtime
 # Copy virtual env from python-deps stage
