@@ -65,7 +65,7 @@ class Trainer():
         received_samples = requests.get(url=url, headers=auth_header).json()
         for sample in received_samples:
             for sensor_type in sample["sensorDataPoints"]:
-                sensor_type["sensorDataPoints"]["sensor"] = sensor_type.pop("sensorName")
+                sensor_type["sensor"] = sensor_type.pop("sensorName")
 
         samples = [SampleInJson(**sample) for sample in received_samples]
         parser = SampleParser(sensors=self.workspace.sensors)
