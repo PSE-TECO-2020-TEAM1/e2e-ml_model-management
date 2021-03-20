@@ -42,7 +42,7 @@ class Sample(MongoModel):
 
 
 class WorkspaceData(MongoModel):
-    #lastModified: int = Field(..., description="Unix Timestamp")
+    lastModified: int = Field(..., description="Unix Timestamp")
     labelToLabelCode: Dict[str, str] = Field(..., description="label -> identifier_number")
     labelCodeToLabel: Dict[str, str] = Field(..., description="identifier_number -> label")
     samples: List[Sample] = Field([], description="samples are set during the training")
