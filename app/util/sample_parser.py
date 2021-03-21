@@ -37,7 +37,7 @@ class SampleParser():
         if sample.start - timeframes[0].start > 0:
             inverted_timeframes.append(Timeframe(start=sample.start, end=timeframes[0].start))
         if sample.end - timeframes[-1].end > 0:
-            inverted_timeframes.append(Timeframe(start=sample.end - timeframes[-1].end))
+            inverted_timeframes.append(Timeframe(start=timeframes[-1].end, end=sample.end))
         # Handle rest
         for i in range(len(timeframes) - 1):
             between_two = Timeframe(start=timeframes[i].end, end=timeframes[i+1].start)
