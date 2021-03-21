@@ -52,6 +52,8 @@ async def get_prediction_results(predictionId: str):
     # We are currently merging the results into one, assuming there is no gap between two neighbor results' end and start
     # It might be better to handle the individual results on the web client
     # Remove this part and just return results as List if decide to do that
+    if len(results) == 0:
+        return response_models.GetPredictionResultsRes(labels=[], start=-1, end=-1)
     labels = []
     for result in results:
         labels += result.labels
