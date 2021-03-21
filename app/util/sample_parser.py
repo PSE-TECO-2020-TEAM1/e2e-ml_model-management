@@ -32,7 +32,7 @@ class SampleParser():
         timeframes = sample.timeFrames
         inverted_timeframes: List[Timeframe] = []
         # Add the beginning and the end
-        if sample.start - timeframes[0].start > 0:
+        if timeframes[0].start - sample.start > 0:
             inverted_timeframes.append(Timeframe(start=sample.start, end=timeframes[0].start))
         if sample.end - timeframes[-1].end > 0:
             inverted_timeframes.append(Timeframe(start=timeframes[-1].end, end=sample.end))
@@ -63,11 +63,15 @@ class SampleParser():
         return data_by_timeframe
 
     def parse_timeframe(self, timeframe: Timeframe, sensor_data_points: Dict[str, List[DataPoint]]) -> DataFrame:
+        print(timeframe)
         target_len = self.calculate_target_len(timeframe.start, timeframe.end)
         dataframe_data: List[Dict[str, float]] = [{} for __range__ in range(target_len)]
         for sensor in self.sensors:
             interpolated = self.interpolate_sensor_datapoints(sensor_data_points[sensor.name], len(sensor.dataFormat), timeframe.start, timeframe.end)
-            for datapoint_index in range(target_len):                
+            print(len(interpolated))
+            print(target_len)
+            print("----------------------")
+            for datapoint_index in range(target_len):
                 for format_index in range(len(sensor.dataFormat)):
                     key = sensor.name + "_" + sensor.dataFormat[format_index]
                     dataframe_data[datapoint_index][key] = interpolated[datapoint_index][format_index]
@@ -75,25 +79,27 @@ class SampleParser():
 
     def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, start: int, end: int) -> List[List[float]]:
         target_len = self.calculate_target_len(start, end)
+        # There are no datapoints in the selected timeframe. We decided to give default values for that timeframe.
+        # Alternatively we can raise an error and stop the training so maybe TODO
+        if len(datapoints) == 0:
+            return [[0 for __range__ in range(sensor_format_len)] for __range__ in range(target_len)]
         # Normalize the timestamps
         for datapoint in datapoints:
             datapoint.timestamp -= start
             
         result: List[List[float]] = []
-        if len(datapoints) == 0:
-            return result
         hi = 0
         i = 0
         while i * self.delta <= datapoints[0].timestamp:
             result.append(datapoints[0].data)
             i += 1
-        for i in range(i, target_len):
-            if i * self.delta >= datapoints[-1].timestamp:
+        for j in range(i, target_len):
+            if j * self.delta >= datapoints[-1].timestamp:
                 result.append(datapoints[-1].data)
                 continue
-            while i * self.delta > datapoints[hi].timestamp:
+            while j * self.delta > datapoints[hi].timestamp:
                 hi += 1
-            interpolation_percentage = (i * self.delta - datapoints[hi - 1].timestamp) / (datapoints[hi].timestamp - datapoints[hi - 1].timestamp)
+            interpolation_percentage = (j * self.delta - datapoints[hi - 1].timestamp) / (datapoints[hi].timestamp - datapoints[hi - 1].timestamp)
             interpolated_datapoint = []
             for format_index in range(sensor_format_len):
                 difference = datapoints[hi].data[format_index] - datapoints[hi - 1].data[format_index]
