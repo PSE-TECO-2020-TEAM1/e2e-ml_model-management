@@ -1,6 +1,5 @@
 import bisect
 from typing import Dict, List
-from numpy import invert
 from pandas.core.frame import DataFrame
 from app.models.workspace import DataPoint, SampleInJson, Sensor, Timeframe
 
@@ -12,7 +11,7 @@ class ParsedSample():
 class SampleParser():
     def __init__(self, sensors: List[Sensor]):
         self.sensors = sensors
-        self.delta = 1000 / max(sensor.samplingRate for sensor in sensors)
+        self.delta = 1000 // max(sensor.samplingRate for sensor in sensors)
 
     def parse_sample(self, sample: SampleInJson) -> ParsedSample:
         data_by_timeframe = self.split_data_by_timeframe(sample)
@@ -28,7 +27,6 @@ class SampleParser():
             dataframe_of_timeframe = self.parse_timeframe(sample.timeFrames[i], data_by_timeframe[i])
             dataframes_of_negative.append(dataframe_of_timeframe)
         return ParsedSample(positive=dataframes_of_positive, negative=dataframes_of_negative)
-
 
     def invert_timeframes(self, sample: SampleInJson):
         timeframes = sample.timeFrames
@@ -65,8 +63,7 @@ class SampleParser():
         return data_by_timeframe
 
     def parse_timeframe(self, timeframe: Timeframe, sensor_data_points: Dict[str, List[DataPoint]]) -> DataFrame:
-        target_len = int((timeframe.end - timeframe.start) / self.delta)
-        print(self.delta)
+        target_len = self.calculate_target_len(timeframe.start, timeframe.end)
         dataframe_data: List[Dict[str, float]] = [{} for __range__ in range(target_len)]
         for sensor in self.sensors:
             interpolated = self.interpolate_sensor_datapoints(sensor_data_points[sensor.name], len(sensor.dataFormat), timeframe.start, timeframe.end)
@@ -77,6 +74,7 @@ class SampleParser():
         return DataFrame(dataframe_data)
 
     def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, start: int, end: int) -> List[List[float]]:
+        target_len = self.calculate_target_len(start, end)
         # Normalize the timestamps
         for datapoint in datapoints:
             datapoint.timestamp -= start
@@ -86,7 +84,6 @@ class SampleParser():
             return result
         hi = 0
         i = 0
-        target_len = int((end - start) / self.delta)
         while i * self.delta <= datapoints[0].timestamp:
             result.append(datapoints[0].data)
             i += 1
@@ -104,3 +101,6 @@ class SampleParser():
                 interpolated_datapoint.append(interpolated_value)
             result.append(interpolated_datapoint)
         return result
+
+    def calculate_target_len(self, start: int, end: int):
+        return (end - start) // self.delta
