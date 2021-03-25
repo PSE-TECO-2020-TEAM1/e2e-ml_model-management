@@ -94,7 +94,7 @@ class Trainer():
         self.db = self.client[self.settings.DATABASE_NAME]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        #self.__update_workspace_samples()
+        self.__update_workspace_samples()
 
         print("start split to windows")
         pipeline_data = self.__get_data_split_to_windows()
