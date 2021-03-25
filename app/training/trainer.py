@@ -6,7 +6,6 @@ import requests
 from datetime import datetime, timedelta
 from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
-from pymongo.database import Database
 from pandas import DataFrame
 from tsfresh.feature_extraction import ComprehensiveFCParameters
 from sklearn.metrics import classification_report
@@ -95,17 +94,13 @@ class Trainer():
         self.db = self.client[self.settings.DATABASE_NAME]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))
-        self.__update_workspace_samples()
+        #self.__update_workspace_samples()
 
         print("start split to windows")
-
-        # data split to windows
         pipeline_data = self.__get_data_split_to_windows()
         labels_of_data_windows = pipeline_data.labelsOfDataWindows
 
         print("start feature extraction")
-
-        # extract features
         pipeline_data = self.__get_extracted_features(pipeline_data)
 
         # train-test split
@@ -121,27 +116,18 @@ class Trainer():
         del labels_of_data_windows
 
         print("start imputation")
-
-        # impute
         (train_data, test_data, imputer_object) = self.__impute(train_data, test_data)
 
         print("start normalize")
-
-        # normalize
         (train_data, test_data, normalizer_object) = self.__normalize(train_data, test_data)
-        print("start train")
 
-        # train
+        print("start train")
         classifier_object = self.__train(train_data, train_labels)
 
         print("start performance metrics")
-
-        # performance metrics
         performance_metrics = self.__get_performance_metrics(classifier_object, test_data, test_labels)
 
         print("start saving ml model")
-
-        # save ml_model
         imputer_object_db_id = self.fs.put(pickle.dumps(imputer_object))
         normalizer_object_db_id = self.fs.put(pickle.dumps(normalizer_object))
         classifier_object_db_id = self.fs.put(pickle.dumps(classifier_object))

@@ -4,7 +4,7 @@ from app.main import app
 
 @pytest.fixture(scope="session", autouse=True)
 def setup():
-    
+    pass
 
 @pytest.fixture(scope="module")
 def client():

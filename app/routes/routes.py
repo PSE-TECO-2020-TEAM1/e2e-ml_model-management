@@ -8,7 +8,7 @@ from app.db import db
 from app.util.training_parameters import Feature, Imputation, Normalization
 import app.models.requests as request_models
 import app.models.responses as response_models
-from app.prediction.prediction_manager import prediction_manager
+from app.prediction.prediction_manager import get_prediction_manager
 from app.util.classifier_config_spaces import get_classifiers_with_hyperparameters
 
 router = APIRouter()
@@ -35,19 +35,19 @@ async def get_prediction_config(predictionId: str):
     if workspace_doc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="The prediction id is not valid")
     workspace = Workspace(**workspace_doc)
-    await prediction_manager.spawn_predictor(prediction_id=predictionId, model_id=workspace.predictionIds[predictionId])
+    await get_prediction_manager().spawn_predictor(prediction_id=predictionId, model_id=workspace.predictionIds[predictionId])
     return response_models.GetPredictionConfigRes(sensors=workspace.sensors)
 
 
 @router.post("/submitData", status_code=status.HTTP_200_OK)
 async def post_submit_data(req: request_models.PostSubmitDataReq):
     # TODO here properly with checks etc...
-    prediction_manager.submit_data(req.predictionId, req.sensorDataPoints, req.start, req.end)
+    get_prediction_manager().submit_data(req.predictionId, req.sensorDataPoints, req.start, req.end)
 
 @router.get("/predictionResults", response_model=response_models.GetPredictionResultsRes, status_code=HTTP_200_OK)
 async def get_prediction_results(predictionId: str):
     # TODO here properly with checks etc...
-    results = prediction_manager.get_prediction_results(predictionId)
+    results = get_prediction_manager().get_prediction_results(predictionId)
     # TODO
     # We are currently merging the results into one, assuming there is no gap between two neighbor results' end and start
     # It might be better to handle the individual results on the web client

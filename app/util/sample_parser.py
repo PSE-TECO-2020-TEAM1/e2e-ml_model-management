@@ -79,7 +79,7 @@ class SampleParser():
 
     def interpolate_sensor_datapoints(self, datapoints: List[DataPoint], sensor_format_len: int, start: int, end: int) -> List[List[float]]:
         target_len = self.calculate_target_len(start, end)
-        # There are no datapoints in the selected timeframe. We decided to give default values for that timeframe.
+        # There are no datapoints in the selected timeframe. We decided to give default values for that timeframe. (default: 0)
         # Alternatively we can raise an error and stop the training so maybe TODO
         if len(datapoints) == 0:
             return [[0 for __range__ in range(sensor_format_len)] for __range__ in range(target_len)]
