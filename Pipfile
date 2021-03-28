@@ -6,9 +6,14 @@ name = "pypi"
 [packages]
 fastapi = "*"
 bson = "*"
+pymongo = "*"
+pandas = "*"
+autopep8 = "*"
+tsfresh = "*"
 
 [dev-packages]
 mongomock = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.8"
