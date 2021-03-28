@@ -14,8 +14,10 @@ httpx = "*"
 pyts = "*"
 pyjwt = "*"
 pytest = "*"
+mongomock = "*"
 
 [dev-packages]
+responses = "*"
 
 [requires]
 python_version = "3.8"

@@ -3,6 +3,7 @@ import pandas
 import tsfresh
 import pickle
 import requests
+import pymongo
 from datetime import datetime, timedelta
 from gridfs import GridFS
 from typing import Any, Dict, List, Tuple
@@ -10,7 +11,6 @@ from pandas import DataFrame
 from tsfresh.feature_extraction import ComprehensiveFCParameters
 from sklearn.metrics import classification_report
 from sklearn.utils import shuffle
-from pymongo import MongoClient
 from multiprocessing import set_start_method
 
 from app.config import get_settings
@@ -90,7 +90,7 @@ class Trainer():
         set_start_method("fork", force=True)
 
         print("--start--")
-        self.client = MongoClient(self.settings.DATABASE_URI, self.settings.DATABASE_PORT)
+        self.client = pymongo.MongoClient(self.settings.DATABASE_URI, self.settings.DATABASE_PORT)
         self.db = self.client[self.settings.DATABASE_NAME]
         self.fs = GridFS(self.db)
         self.workspace = Workspace(**self.db.workspaces.find_one({"_id": self.workspace_id}))

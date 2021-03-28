@@ -1,18 +1,18 @@
 from app.util.sample_parser import SampleParser
-from app.models.workspace import DataPoint, DataPointsPerSensor
 import tsfresh
 import pickle
+import pymongo
 from collections import deque
 from multiprocessing import set_start_method
 from pandas.core.indexes.base import Index
 from multiprocessing.synchronize import Semaphore as SemaphoreType
 from multiprocessing.connection import Connection
 from gridfs import GridFS
-from pymongo.mongo_client import MongoClient
 from pandas import DataFrame
 from typing import Deque, Dict, List
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 
+from app.models.workspace import DataPoint, DataPointsPerSensor
 from app.models.ml_model import MlModel
 from app.models.mongo_model import OID
 from app.config import get_settings
@@ -37,7 +37,7 @@ class Predictor():
 
     def __init_objects(self):
         settings = get_settings()
-        client = MongoClient(settings.DATABASE_URI, settings.DATABASE_PORT)
+        client = pymongo.MongoClient(settings.DATABASE_URI, settings.DATABASE_PORT)
         db = client[settings.DATABASE_NAME]
         fs = GridFS(db)
         model = MlModel(**db.ml_models.find_one({"_id": self.model_id}))
