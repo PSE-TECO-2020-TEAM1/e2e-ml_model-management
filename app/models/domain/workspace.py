@@ -1,4 +1,4 @@
-from app.models.domain.training_data import DataSet
+from app.models.domain.training_data_set import TrainingDataSet
 from app.models.domain.trained_models import MachineLearningModel
 from app.models.domain.sensor import Sensor
 from typing import List
@@ -14,5 +14,5 @@ class Workspace(MongoModel):
     training_state: TrainingState
     prediction_IDs: List[PredictionID]
     sensors: List[Sensor]
-    training_data: DataSet
+    training_data_set: TrainingDataSet
     trained_models: List[MachineLearningModel]
