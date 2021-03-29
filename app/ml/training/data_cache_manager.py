@@ -1,5 +1,5 @@
 from app.ml.training.parameters.features import Feature
-from typing import List
+from typing import Dict, List
 from app.models.domain.training_data_set import Sample
 from pandas.core.arrays import boolean
 from app.models.domain.split_to_windows_data import LabeledDataWindows
@@ -33,8 +33,8 @@ class DataCacheManager():
         if self.workspace_repository is None:
             raise TrainingError("Database is not configured")
 
-    def set_database(self, db: Database):
-        self.workspace_repository = WorkspaceRepository(db)
+    def set_workspace_repository(self, workspace_repository: WorkspaceRepository):
+        self.workspace_repository = workspace_repository
 
     def update_training_data_set(self):
         self.is_valid_cache_manager()
@@ -44,20 +44,44 @@ class DataCacheManager():
             return
         # TODO
 
-    def get_training_data_set(self) -> List[Sample]:
+    def get_sample_list(self) -> List[Sample]:
         self.is_valid_cache_manager()
+        return self.workspace_repository.get_sample_list()
 
-
-    def list_cached_split_to_windows(self, parameter: SplitToWindowsLevel) -> List[SlidingWindow]:
+    def list_cached_labeled_data_windows(self) -> List[SlidingWindow]:
         self.is_valid_cache_manager()
+        workspace = self.workspace_repository.get_workspace_by_id(self.workspace_id)
+        sliding_windows = []
+        for entry in workspace.training_data_set.split_to_windows_entries:
+            sliding_windows.append(entry.sliding_window)
+        return sliding_windows
 
-
-    def get_cached_split_to_windows(self, parameter: SplitToWindowsLevel) -> LabeledDataWindows:
+    def get_cached_labeled_data_windows(self, parameter: SplitToWindowsLevel) -> LabeledDataWindows:
         self.is_valid_cache_manager()
+        return self.workspace_repository.get_labeled_data_windows(parameter.sliding_window)
+
+    def add_labeled_data_windows(self, labeled_data_windows: LabeledDataWindows):
+        self.is_valid_cache_manager()
+        self.workspace_repository.add_labeled_data_windows(labeled_data_windows)
 
     def list_cached_extracted_features(self, parameter: SplitToWindowsLevel) -> List[Feature]:
         self.is_valid_cache_manager()
+        workspace = self.workspace_repository.get_workspace_by_id(self.workspace_id)
+        extracted_features = []
+        for split_to_windows_entry in workspace.training_data_set.split_to_windows_entries:
+            if split_to_windows_entry.sliding_window == parameter.sliding_window:
+                for extracted_feature_entry in split_to_windows_entry.extracted_feature_entries:
+                    extracted_features.append(extracted_feature_entry.extracted_feature)
+        return extracted_features
 
-
-    def get_cached_extracted_feature(self, parameter: ExtractedFeatureLevel) -> List[DataFrame]:
+    def get_cached_extracted_feature_data_frames(self, parameter: ExtractedFeatureLevel) -> Dict[Feature, DataFrame]:
         self.is_valid_cache_manager()
+        result = {}
+        for feature in parameter.features:
+            result[feature] = self.workspace_repository.get_extracted_feature(self.workspace_id, parameter.sliding_window, feature)
+        return result
+
+    def add_extracted_feature_data_frames(self, sliding_window: SlidingWindow, extracted_features: Dict[Feature, DataFrame]):
+        self.is_valid_cache_manager()
+        for feature in extracted_features:
+            self.workspace_repository.add_extracted_feature(self.workspace_id, sliding_window, feature, extracted_features[feature])
