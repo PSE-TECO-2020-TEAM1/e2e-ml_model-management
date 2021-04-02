@@ -1,45 +1,35 @@
 from app.ml.training.parameters.features import Feature
-from app.models.domain.training_data_set import Sample
+from app.models.domain.training_data_set import InterpolatedSample
 from pandas.core.frame import DataFrame
-from app.models.domain.split_to_windows_data import LabeledDataWindows
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from app.models.domain.sliding_window import SlidingWindow
 import tsfresh
 from tsfresh.feature_extraction import ComprehensiveFCParameters
 import pandas
 
 
-def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Sample]) -> LabeledDataWindows:
+def split_to_data_windows(sliding_window: SlidingWindow, samples: List[InterpolatedSample]) -> Tuple[DataFrame, List[str]]:
     labels: List[str] = []
     data_windows: List[DataFrame] = []
+    id_counter = 0
     (window_size, sliding_step) = (sliding_window.window_size, sliding_window.sliding_step)
     for sample in samples:
         sensor_data_points = sample.data_frame
         # For each window in this sample, increment by the sliding step value starting from 0
         for window_offset in range(0, len(sensor_data_points.index) - window_size + 1, sliding_step):
-            data_windows.append(sensor_data_points.iloc[window_offset:window_offset + window_size])
+            data_window = sensor_data_points.iloc[window_offset:window_offset + window_size]
+            data_window["id"] = id_counter
+            id_counter += 1
             labels.append(sample.label)
-    return LabeledDataWindows(labels=labels, data_windows=data_windows)
+    result = pandas.concat(data_windows)
+    return (result, labels)
 
 
-def extract_features(features: List[Feature], data_windows: List[DataFrame]) -> Dict[Feature, DataFrame]:
-    window_count = len(data_windows)
-    newly_extracted_features: Dict[Feature, List[Dict[str, float]]] = {
-        feature: [{} for _range_ in range(window_count)] for feature in features
-    }
+def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:
     settings = {key: ComprehensiveFCParameters()[key] for key in features}
-    for data_window_index in range(window_count):
-        data_windows[data_window_index]["id"] = data_window_index
-    data_windows = pandas.concat(data_windows)
-    extracted = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings, pivot=False)
-    # Split by columns features
-    for i in range(len(extracted)):
-        feature: Feature = features[i % len(features)]
-        data_window_index = extracted[i][0]
-        label = extracted[i][1]
-        value = extracted[i][2]
-        newly_extracted_features[feature][data_window_index][label] = value
-    # Convert to DataFrame
-    for feature in newly_extracted_features:
-        newly_extracted_features[feature] = DataFrame(newly_extracted_features[feature])
-    return newly_extracted_features
+    extracted = DataFrame, tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
+    result = {}
+    for feature_index in range(len(features)):
+        feature = features[feature_index]
+        result[feature] = extracted.iloc[:, [feature_index]]
+    return result
