@@ -10,6 +10,10 @@ pymongo = "*"
 pandas = "*"
 autopep8 = "*"
 tsfresh = "*"
+sklearn = "*"
+pyts = "*"
+mypy = "*"
+pyjwt = "*"
 
 [dev-packages]
 mongomock = "*"
