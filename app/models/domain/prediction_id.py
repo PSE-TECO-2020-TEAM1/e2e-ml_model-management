@@ -1,4 +1,9 @@
-from pydantic import BaseModel
 
-class PredictionID(BaseModel):
+from dataclasses import dataclass
+
+
+@dataclass
+class PredictionID():
+    #TODO
+    pass
     

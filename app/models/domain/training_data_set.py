@@ -1,27 +1,32 @@
+from bson.objectid import ObjectId
 from app.models.domain.split_to_windows_data import SplitToWindowsData
-from typing import List
-from app.models.domain.mongo_model import OID
-from pydantic import BaseModel
-from pydantic.fields import Field
+from app.models.domain.sliding_window import SlidingWindow
+from typing import Dict, List
 from pandas import DataFrame
+from dataclasses import dataclass
 import pickle
 
-
-class Sample(BaseModel):
+@dataclass
+class InterpolatedSample():
     label: str
     data_frame: DataFrame
+    
+@dataclass
+class TrainingDataSet():
+    last_modified: int
+    sample_list_file_ID: ObjectId
+    split_to_windows_cache: Dict[SlidingWindow, SplitToWindowsData] = {}
 
+    @staticmethod
+    def serialize_sample_list(sample_list: List[InterpolatedSample]) -> bytes:
+        return pickle.dumps(sample_list)
 
-class TrainingDataSet(BaseModel):
-    last_modified: int = Field(0)
-    sample_list_file_ID: OID = Field(None)
-    split_to_windows_entries: List[SplitToWindowsData] = Field([])
+    @staticmethod
+    def deserialize_sample_list(sample_list: bytes) -> List[InterpolatedSample]:
+        return pickle.loads(sample_list)
 
-    def serialize(samples: List[Sample]) -> bytes:
-        return pickle.dumps(samples)
-
-    def deserialize(samples: bytes) -> List[Sample]:
-        return pickle.loads(samples)
-
-    def get_all_file_IDs(self) -> List[OID]:
-        return [self.sample_list_file_ID] + [entry.get_all_file_IDs() for entry in self.split_to_windows_entries]
+    def get_all_file_IDs(self) -> List[ObjectId]:
+        IDs = [self.sample_list_file_ID]
+        for entry in self.split_to_windows_cache.values():
+            IDs += entry.get_all_file_IDs()
+        return IDs

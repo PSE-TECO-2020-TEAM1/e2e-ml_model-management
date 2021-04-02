@@ -1,4 +1,8 @@
-from pydantic.main import BaseModel
+from dataclasses import dataclass
 
-class TrainingState(BaseModel):
+
+@dataclass
+class TrainingState():
+    #TODO
+    pass
     

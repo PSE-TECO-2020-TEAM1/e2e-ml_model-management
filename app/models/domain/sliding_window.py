@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
-class SlidingWindow(BaseModel):
+@dataclass
+class SlidingWindow():
     window_size: int
     sliding_step: int

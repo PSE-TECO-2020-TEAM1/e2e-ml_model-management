@@ -1,26 +1,43 @@
+from app.models.domain.sensor import SensorComponent
+from dataclasses import dataclass
+from bson.objectid import ObjectId
 from pandas.core.frame import DataFrame
-from app.models.domain.sliding_window import SlidingWindow
-from app.models.domain.mongo_model import OID
-from pydantic.fields import Field
-from app.models.domain.extracted_feature_data import ExtractedFeatureData
-from typing import List
+from app.ml.training.parameters.features import Feature
+from typing import Dict, List
 import pickle
-from pydantic import BaseModel
 
-class LabeledDataWindows():
-    labels: List[str]
-    data_windows: List[DataFrame]
 
-class SplitToWindowsData(BaseModel):
-    sliding_window: SlidingWindow
-    labeled_data_windows_file_ID: OID
-    extracted_feature_entries: List[ExtractedFeatureData] = Field([])
+@dataclass
+class SplitToWindowsData():
+    data_windows_df_file_ID: ObjectId
+    labels_of_data_windows_file_ID: ObjectId
+    sensor_component_feature_df_file_IDs: Dict[SensorComponent, Dict[Feature, ObjectId]] = {}
 
-    def serialize(labeled_data_windows: LabeledDataWindows) -> bytes:
-        return pickle.dumps(labeled_data_windows)
+    @staticmethod
+    def serialize_data_windows_df(data_windows_df: DataFrame) -> bytes:
+        return pickle.dumps(data_windows_df)
 
-    def deserialize(labeled_data_windows: bytes) -> LabeledDataWindows:
-        return pickle.loads(labeled_data_windows)
+    @staticmethod
+    def deserialize_data_windows_df(data_windows_df: bytes) -> DataFrame:
+        return pickle.loads(data_windows_df)
 
-    def get_all_file_IDs(self) -> List[OID]:
-        return [self.labeled_data_windows_file_ID] + [entry.get_all_file_IDs() for entry in self.extracted_feature_entries]
+    @staticmethod
+    def serialize_labels_of_data_windows(labels_of_data_windows: List[str]) -> bytes:
+        return pickle.dumps(labels_of_data_windows)
+
+    @staticmethod
+    def deserialize_labels_of_data_windows(labels_of_data_windows: bytes) -> List[str]:
+        return pickle.loads(labels_of_data_windows)
+
+    @staticmethod
+    def serialize_sensor_component_feature_df(sensor_component_feature_df: DataFrame) -> bytes:
+        return pickle.dumps(sensor_component_feature_df)
+
+    @staticmethod
+    def deserialize_sensor_component_feature_df(sensor_component_feature_df: bytes) -> DataFrame:
+        return pickle.loads(sensor_component_feature_df)
+
+    def get_all_file_IDs(self) -> List[ObjectId]:
+        IDs = [self.labels_of_data_windows_file_ID, self.data_windows_df_file_ID]
+        # TODO
+        # return IDs + list(res.values() for res in self.sensor_component_feature_df_file_IDs.values())

@@ -1,7 +1,13 @@
+from app.ml.training.parameters.features import Feature
+from dataclasses import dataclass
 from typing import List
-from pydantic import BaseModel
 
-class Sensor(BaseModel):
+class SensorComponent(str):
+    pass
+
+
+@dataclass
+class Sensor():
     name: str
     sampling_rate: int
-    data_format: List[str]
+    components: List[SensorComponent]
