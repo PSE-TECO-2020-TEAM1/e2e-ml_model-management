@@ -1,14 +1,16 @@
-from typing import Any
+from dataclasses import asdict
+from typing import Any, Dict
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
 from app.db.error.non_existant_error import NonExistentError
 from app.models.domain.workspace import Workspace
 from pymongo.database import Database
+from app.core.config import WORKSPACE_COLLECTION_NAME
 
 
 class WorkspaceRepository():
     def __init__(self, db: Database):
-        self.collection = db["workspaces"]
+        self.collection = db[WORKSPACE_COLLECTION_NAME]
 
     def get_workspace(self, workspace_id: ObjectId) -> Workspace:
         workspace = self.collection.find_one({"_id": workspace_id})
@@ -16,7 +18,7 @@ class WorkspaceRepository():
             raise NonExistentError("Workspace with the given id does not exist")
         return Workspace(**workspace)
 
-    def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Any):
+    def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Dict):
         result = self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})
         if not result:
             raise NonExistentError("Could not set " + field)
@@ -26,5 +28,5 @@ class WorkspaceRepository():
         return workspace.training_data_set
 
     def set_training_data_set(self, workspace_id: ObjectId, training_data_set: TrainingDataSet):
-        self.set_workspace_field(workspace_id, "training_data_set", training_data_set)
+        self.set_workspace_field(workspace_id, "training_data_set", asdict(training_data_set))
         

@@ -1,7 +1,9 @@
-from app.ml.training.parameters.classifiers import Classifier
-from app.ml.training.parameters.normalizations import Normalization
-from app.ml.objects.ml_object_factory import get_classifier, get_imputer, get_normalizer
-from app.ml.training.parameters.imputations import Imputation
+from app.ml.objects.classification import Classifier
+from app.ml.objects.classification.factory import get_classifier
+from app.ml.objects.imputation import Imputation
+from app.ml.objects.imputation.factory import get_imputer
+from app.ml.objects.normalization import Normalization
+from app.ml.objects.normalization.factory import get_normalizer
 from sklearn.compose import ColumnTransformer, make_column_selector
 from app.models.domain.sensor import SensorComponent
 from typing import Dict

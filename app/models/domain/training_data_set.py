@@ -1,21 +1,16 @@
+from app.models.domain.sample import InterpolatedSample
 from bson.objectid import ObjectId
 from app.models.domain.split_to_windows_data import SplitToWindowsData
 from app.models.domain.sliding_window import SlidingWindow
 from typing import Dict, List
-from pandas import DataFrame
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pickle
 
 @dataclass
-class InterpolatedSample():
-    label: str
-    data_frame: DataFrame
-    
-@dataclass
 class TrainingDataSet():
     last_modified: int
-    sample_list_file_ID: ObjectId
-    split_to_windows_cache: Dict[SlidingWindow, SplitToWindowsData] = {}
+    sample_list_file_ID: ObjectId = None
+    split_to_windows_cache: Dict[SlidingWindow, SplitToWindowsData] = field(default_factory=dict)
 
     @staticmethod
     def serialize_sample_list(sample_list: List[InterpolatedSample]) -> bytes:
@@ -24,6 +19,9 @@ class TrainingDataSet():
     @staticmethod
     def deserialize_sample_list(sample_list: bytes) -> List[InterpolatedSample]:
         return pickle.loads(sample_list)
+
+    def sliding_window_in_cache(self, sliding_window: SlidingWindow) -> bool:
+        return sliding_window in self.split_to_windows_cache.keys()
 
     def get_all_file_IDs(self) -> List[ObjectId]:
         IDs = [self.sample_list_file_ID]

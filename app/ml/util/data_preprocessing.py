@@ -1,5 +1,5 @@
-from app.ml.training.parameters.features import Feature
-from app.models.domain.training_data_set import InterpolatedSample
+from app.ml.objects.feature import Feature
+from app.models.domain.sample import InterpolatedSample
 from pandas.core.frame import DataFrame
 from typing import Dict, List, Tuple
 from app.models.domain.sliding_window import SlidingWindow
@@ -27,7 +27,7 @@ def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Interpola
 
 def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:
     settings = {key: ComprehensiveFCParameters()[key] for key in features}
-    extracted = DataFrame, tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
+    extracted: DataFrame = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
     result = {}
     for feature_index in range(len(features)):
         feature = features[feature_index]

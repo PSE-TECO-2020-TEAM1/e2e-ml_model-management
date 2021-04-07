@@ -1,9 +1,7 @@
+from typing import List
 from pydantic import BaseModel
 
-class SampleInWorkspace(BaseModel):
-    #TODO
+class SampleInSubmit(BaseModel):
+    # TODO
     pass
 
-class SampleInSubmit(BaseModel):
-    #TODO
-    pass

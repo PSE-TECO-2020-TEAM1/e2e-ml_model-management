@@ -1,8 +1,8 @@
 from app.models.domain.sensor import SensorComponent
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from bson.objectid import ObjectId
 from pandas.core.frame import DataFrame
-from app.ml.training.parameters.features import Feature
+from app.ml.objects.feature import Feature
 from typing import Dict, List
 import pickle
 
@@ -11,7 +11,7 @@ import pickle
 class SplitToWindowsData():
     data_windows_df_file_ID: ObjectId
     labels_of_data_windows_file_ID: ObjectId
-    sensor_component_feature_df_file_IDs: Dict[SensorComponent, Dict[Feature, ObjectId]] = {}
+    sensor_component_feature_df_file_IDs: Dict[SensorComponent, Dict[Feature, ObjectId]] = field(default_factory=dict)
 
     @staticmethod
     def serialize_data_windows_df(data_windows_df: DataFrame) -> bytes:
@@ -37,7 +37,13 @@ class SplitToWindowsData():
     def deserialize_sensor_component_feature_df(sensor_component_feature_df: bytes) -> DataFrame:
         return pickle.loads(sensor_component_feature_df)
 
+    def sensor_component_feature_in_cache(self, sensor_component: SensorComponent, feature: Feature) -> bool:
+        if sensor_component not in self.sensor_component_feature_df_file_IDs.keys():
+            return False
+        return feature in self.sensor_component_feature_df_file_IDs[sensor_component].keys()
+
     def get_all_file_IDs(self) -> List[ObjectId]:
         IDs = [self.labels_of_data_windows_file_ID, self.data_windows_df_file_ID]
-        # TODO
-        # return IDs + list(res.values() for res in self.sensor_component_feature_df_file_IDs.values())
+        for i in self.sensor_component_feature_df_file_IDs.values():
+            IDs += list(i.values())
+        return IDs

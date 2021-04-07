@@ -16,6 +16,7 @@ mypy = "*"
 pyjwt = "*"
 motor = "*"
 configspace = "*"
+uvicorn = "*"
 
 [dev-packages]
 mongomock = "*"
