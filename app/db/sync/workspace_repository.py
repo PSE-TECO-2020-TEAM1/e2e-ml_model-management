@@ -1,12 +1,13 @@
+from app.models.domain.sensor import SensorComponent
 from dataclasses import asdict
-from typing import Any, Dict
+from typing import Dict
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
 from app.db.error.non_existant_error import NonExistentError
 from app.models.domain.workspace import Workspace
 from pymongo.database import Database
 from app.core.config import WORKSPACE_COLLECTION_NAME
-
+import dacite
 
 class WorkspaceRepository():
     def __init__(self, db: Database):
@@ -16,7 +17,7 @@ class WorkspaceRepository():
         workspace = self.collection.find_one({"_id": workspace_id})
         if workspace is None:
             raise NonExistentError("Workspace with the given id does not exist")
-        return Workspace(**workspace)
+        return dacite.from_dict(data_class=Workspace, data=workspace, config=dacite.Config(cast=[SensorComponent]))
 
     def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Dict):
         result = self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})

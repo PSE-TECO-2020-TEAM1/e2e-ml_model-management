@@ -35,13 +35,13 @@ class DataSetManager():
         if workspace.training_data_set.last_modified == last_modified:
             return
         raw_samples = self.external_data_source.fetch_samples(self.workspace_id)
-        interpolated_samples = parse_samples_from_workspace(raw_samples)
+        interpolated_samples = parse_samples_from_workspace(raw_samples, workspace.sensors)
         # Don't forget to delete the old files first
-        for file_id in TrainingDataSet.get_all_file_IDs():
+        for file_id in workspace.training_data_set.get_all_file_IDs():
             self.file_repository.delete_file(file_id)
         file_id = self.file_repository.put_file(TrainingDataSet.serialize_sample_list(interpolated_samples))
         new_training_data_set = TrainingDataSet(last_modified=last_modified, sample_list_file_ID=file_id)
-        self.workspace_repository.set_training_data_set(new_training_data_set)
+        self.workspace_repository.set_training_data_set(self.workspace_id, new_training_data_set)
 
     def get_sample_list(self) -> List[InterpolatedSample]:
         self.is_valid_cache_manager()
@@ -52,8 +52,8 @@ class DataSetManager():
     def get_labels_of_data_windows(self, sliding_window: SlidingWindow) -> List[str]:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_id = training_data_set.split_to_windows_cache[sliding_window].labels_of_data_windows_file_ID
-        return SplitToWindowsData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_id))
+        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].labels_of_data_windows_file_ID
+        return SplitToWindowsData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
 
     def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
         self.is_valid_cache_manager()
@@ -63,7 +63,7 @@ class DataSetManager():
     def get_cached_split_to_windows(self, sliding_window: SlidingWindow) -> DataFrame:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.split_to_windows_cache[sliding_window].data_windows_df_file_ID
+        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].data_windows_df_file_ID
         return SplitToWindowsData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
 
     def add_split_to_windows(self, sliding_window: SlidingWindow, data_windows: DataFrame, labels_of_data_windows: List[str]):
@@ -72,26 +72,26 @@ class DataSetManager():
         data_windows_df_file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_data_windows_df(data_windows))
         labels_of_data_windows_file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_labels_of_data_windows(labels_of_data_windows))
         res = SplitToWindowsData(data_windows_df_file_ID=data_windows_df_file_ID, labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
-        training_data_set.split_to_windows_cache[sliding_window] = res
+        training_data_set.split_to_windows_cache[str(sliding_window)] = res
         self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
 
     def is_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> bool:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        if training_data_set.sliding_window_in_cache(sliding_window):
+        if not training_data_set.sliding_window_in_cache(sliding_window):
             return False
-        return training_data_set.split_to_windows_cache[sliding_window].sensor_component_feature_in_cache(sensor_component, feature)
+        return training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_in_cache(sensor_component, feature)
 
     def get_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> DataFrame:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.split_to_windows_cache[sliding_window].sensor_component_feature_df_file_IDs[sensor_component][feature]
+        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
         return SplitToWindowsData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
 
     def add_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature, feature_df: DataFrame):
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_IDs_dict = training_data_set.split_to_windows_cache[sliding_window].sensor_component_feature_df_file_IDs
+        file_IDs_dict = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs
         file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_sensor_component_feature_df(feature_df))
         if sensor_component in file_IDs_dict.keys():
             file_IDs_dict[sensor_component][feature] = file_ID

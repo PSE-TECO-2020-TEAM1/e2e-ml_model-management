@@ -1,15 +1,16 @@
-from multiprocessing import set_start_method
-from app.ml.util.data_preprocessing import extract_features, split_to_data_windows
-from app.ml.objects.pipeline_factory import make_pipeline_from_config
-from app.ml.objects.feature import Feature
+from app.ml.util.data_processing import extract_features, split_to_data_windows
+from pandas.core.frame import DataFrame
+from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
+from multiprocessing import set_start_method
+from app.ml.objects.pipeline_factory import make_pipeline_from_config
 from typing import Callable, Dict, List, Tuple
 from sklearn.preprocessing import LabelEncoder
-from pandas.core.frame import DataFrame
 from pymongo.database import Database
 from app.models.domain.training_config import TrainingConfig
 from app.ml.training.data_set_manager import DataSetManager
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 import pandas as pd
 
 class Trainer():
@@ -29,12 +30,11 @@ class Trainer():
 
     def train(self):
         set_start_method("fork", force=True)
-        print(1)
         self.setup()
-        print(2)
         # Get the data frame ready for pipeline
         x, y = self.gather_features_and_labels()
-        print(x)
+        # We have to sort the columns correctly when we are predicting later so we save the order
+        columns = x.columns
         # Encode labels
         label_encoder = LabelEncoder().fit(y)
         y = label_encoder.transform(y)
@@ -44,7 +44,9 @@ class Trainer():
         pipeline = make_pipeline_from_config(self.pipeline_config, self.classifier, self.hyperparameters)
         # Fit the model
         pipeline.fit(x_train, y_train)
-        #TODO metrics and persistence of pipeline, encoder...
+        
+        #TODO metrics and persistence of pipeline, encoder... (CACHE DOES NOT WORK FOR FEATURES (FOR SAMPLES OK THO))
+        print(classification_report(y_test, pipeline.predict(x_test), output_dict=True))
 
 
     def gather_features_and_labels(self) -> Tuple[DataFrame, List[str]]:
@@ -76,8 +78,8 @@ class Trainer():
             self.data_set_manager.add_split_to_windows(sliding_window, data_windows, labels_of_data_windows)
         result = []
         for sensor_component, features in sensor_component_features.items():
-            features = extract_features(data_windows[[sensor_component]], features)
+            features = extract_features(data_windows[[sensor_component, "id"]], features)
             for feature in features:
                 self.data_set_manager.add_sensor_component_feature(sliding_window, sensor_component, feature, features[feature])
-            result.append(features.values())
+            result += list(features.values())
         return result

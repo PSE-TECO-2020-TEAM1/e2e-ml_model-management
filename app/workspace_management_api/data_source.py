@@ -1,14 +1,14 @@
-from abc import ABC, abstractstaticmethod
+from abc import ABC
 from typing import List
 from bson.objectid import ObjectId
 from app.workspace_management_api.sample_model import SampleFromWorkspace
 
 class ExternalDataSource(ABC):
 
-    @abstractstaticmethod
+    @staticmethod
     def last_modified(workspace_id: ObjectId) -> int:
         pass
 
-    @abstractstaticmethod
+    @staticmethod
     def fetch_samples(workspace_id: ObjectId) -> List[SampleFromWorkspace]:
         pass

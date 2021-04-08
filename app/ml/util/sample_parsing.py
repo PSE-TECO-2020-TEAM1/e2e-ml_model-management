@@ -33,15 +33,15 @@ def parse_sample_from_workspace(sample: SampleFromWorkspace, workspace_sensors: 
     """
     We treat each timeframe of a sample as a new sample internally, so this method also returns a list of interpolated samples
     """
-    split_data_by_timeframe = split_data_by_timeframe(sample)
+    data_by_timeframe = split_data_by_timeframe(sample)
     interpolated_timeframe_data_frames = []
-    delta = delta_of_sensors(workspace_sensors)
-    for timeframe, timeframe_data in split_data_by_timeframe.items():
+    delta = delta_of_sensors(list(workspace_sensors.values()))
+    for timeframe, timeframe_data in data_by_timeframe.items():
         data_frame_data: Dict[Sensor, List[List[float]]] = {}
-        for sensor, sensor_data in timeframe_data.items():
-            workspace_sensor = workspace_sensors[sensor]
-            data_frame_data[workspace_sensor] = interpolate_sensor_data_points_in_timeframe(sensor_data, workspace_sensor, timeframe, delta)
-        interpolated_timeframe_data_frames.append(build_dataframe(data_frame_data))
+        for sensor_name, sensor_data in timeframe_data.items():
+            sensor = workspace_sensors[sensor_name]
+            data_frame_data[sensor_name] = interpolate_sensor_data_points_in_timeframe(sensor_data, sensor, timeframe, delta)
+        interpolated_timeframe_data_frames.append(build_dataframe(data_frame_data, workspace_sensors))
     return [InterpolatedSample(label=sample.label, data_frame=df) for df in interpolated_timeframe_data_frames]
 
 # Interpolate data points from each sensor so that they all match the max
@@ -52,13 +52,14 @@ def delta_of_sensors(sensors: List[Sensor]):
             max = sensor.sampling_rate
     return 1000 // max
 
-def build_dataframe(data_frame_data: Dict[Sensor, List[List[float]]]) -> DataFrame:
+def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sensors: Dict[str, Sensor]) -> DataFrame:
     data_point_count = len(next(iter(data_frame_data.values())))
     # Sanity check (each data point list per sensor must be of the same size)
     for data in data_frame_data.values():
         assert len(data) == data_point_count
     rows = [{} for __range__ in range(data_point_count)]
-    for sensor, data in data_frame_data.items():
+    for sensor_name, data in data_frame_data.items():
+        sensor = workspace_sensors[sensor_name]
         for i in range(data_point_count):
             for component_index in range(len(sensor.components)):
                 component = sensor.components[component_index]
@@ -69,19 +70,19 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
     # Build key index for binary search
     sensor_timestamps = {}
     for i in range(len(sample.sensorDataPoints)):
-        sensorName = sample.sensorDataPoints[i].sensor
+        sensor_name = sample.sensorDataPoints[i].sensor
         datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
-        sensor_timestamps[sensorName] = [datapoint.timestamp for datapoint in datapoints]
+        sensor_timestamps[sensor_name] = [datapoint.timestamp for datapoint in datapoints]
 
     data_by_timeframe = {}
     for i in range(len(sample.timeFrames)):
         timeframe = sample.timeFrames[i]
         data_in_timeframe = {}
         for j in range(len(sample.sensorDataPoints)):
-            sensorName = sample.sensorDataPoints[j].sensor
-            left = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.start)
-            right = bisect.bisect_left(sensor_timestamps[sensorName], timeframe.end)
-            data_in_timeframe[sensorName] += sample.sensorDataPoints[j].dataPoints[left:right]
+            sensor_name = sample.sensorDataPoints[j].sensor
+            left = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.start)
+            right = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.end)
+            data_in_timeframe[sensor_name] = sample.sensorDataPoints[j].dataPoints[left:right]
         data_by_timeframe[timeframe] = data_in_timeframe
     return data_by_timeframe
 

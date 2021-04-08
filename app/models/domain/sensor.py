@@ -7,7 +7,7 @@ class SensorComponent(str):
 def make_sensor_component(sensor_name: str, component: str) -> SensorComponent:
     return component + "_" + sensor_name
 
-@dataclass(frozen=True)
+@dataclass
 class Sensor():
     sampling_rate: int
     components: List[SensorComponent]

@@ -13,20 +13,26 @@ def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Interpola
     data_windows: List[DataFrame] = []
     id_counter = 0
     (window_size, sliding_step) = (sliding_window.window_size, sliding_window.sliding_step)
+    import time
+    start = time.time()
     for sample in samples:
         sensor_data_points = sample.data_frame
         # For each window in this sample, increment by the sliding step value starting from 0
         for window_offset in range(0, len(sensor_data_points.index) - window_size + 1, sliding_step):
-            data_window = sensor_data_points.iloc[window_offset:window_offset + window_size]
+            data_window = sensor_data_points.iloc[window_offset:window_offset + window_size, :].copy()
             data_window["id"] = id_counter
             id_counter += 1
+            data_windows.append(data_window)
             labels.append(sample.label)
-    result = pandas.concat(data_windows)
+    result = pandas.concat(data_windows, ignore_index=True)
+    print(result)
+    print(time.time() - start)
     return (result, labels)
 
 
 def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:
-    settings = {key: ComprehensiveFCParameters()[key] for key in features}
+    settings = {key: ComprehensiveFCParameters()[key] for key in [str(feature.value).lower() for feature in features]}
+    print(data_windows)
     extracted: DataFrame = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
     result = {}
     for feature_index in range(len(features)):

@@ -1,6 +1,10 @@
 from typing import List
 from dataclasses import dataclass
 
+@dataclass(frozen=True)
+class Timeframe():
+    start: int
+    end: int
 
 @dataclass
 class DataPoint():
@@ -12,11 +16,6 @@ class DataPoint():
 class DataPointsPerSensor():
     sensor: str
     dataPoints: List[DataPoint]
-
-@dataclass
-class Timeframe():
-    start: int
-    end: int
 
 @dataclass
 class SampleFromWorkspace():

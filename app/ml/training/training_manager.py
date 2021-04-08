@@ -20,7 +20,7 @@ def initiate_new_training(workspace_id: ObjectId, training_config_in_train: Trai
     trainer = Trainer(training_config=config, data_set_manager=data_set_manager, create_db=create_sync_db)
     import time
     start = time.time()
-    Process(target=trainer.train)
+    Process(target=trainer.train).start()
     print(time.time() - start)
 
 

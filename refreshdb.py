@@ -18,7 +18,10 @@ coll = db[WORKSPACE_COLLECTION_NAME]
 test_workspace = asdict(Workspace(
     _id=ObjectId("666f6f2d6261722d71757578"),
     user_id=ObjectId("666f6f2d6261722d71757578"),
-    sensors={"Accelerometer": Sensor(sampling_rate=50, components=["x_Accelerometer", "y_Accelerometer", "z_Accelerometer"])},
+    sensors={
+        "Accelerometer": Sensor(sampling_rate=50, components=["x_Accelerometer", "y_Accelerometer", "z_Accelerometer"]),
+        "Gyroscope": Sensor(sampling_rate=50, components=["x_Gyroscpoe", "y_Gyroscope", "z_Gyroscope"])
+    },
     training_data_set=TrainingDataSet(last_modified=1),
     training_state=TrainingState()
 ))
