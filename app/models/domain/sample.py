@@ -4,4 +4,4 @@ from pandas import DataFrame
 @dataclass
 class InterpolatedSample():
     label: str
-    data_frame: DataFrame
+    data_frame: DataFrame # List[Dict[SensorComponent, float]]

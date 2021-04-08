@@ -1,6 +1,6 @@
 from app.ml.util.sample_parsing import parse_samples_from_workspace
 from app.models.domain.sample import InterpolatedSample
-from app.models.domain.split_to_windows_data import SplitToWindowsData
+from app.models.domain.split_to_windows_data import FeatureExtractionData
 from app.models.domain.sliding_window import SlidingWindow
 from pandas.core.frame import DataFrame
 from app.ml.objects.feature.enum import Feature
@@ -53,7 +53,7 @@ class DataSetManager():
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].labels_of_data_windows_file_ID
-        return SplitToWindowsData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
+        return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
 
     def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
         self.is_valid_cache_manager()
@@ -64,14 +64,14 @@ class DataSetManager():
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].data_windows_df_file_ID
-        return SplitToWindowsData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
+        return FeatureExtractionData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
 
     def add_split_to_windows(self, sliding_window: SlidingWindow, data_windows: DataFrame, labels_of_data_windows: List[str]):
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        data_windows_df_file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_data_windows_df(data_windows))
-        labels_of_data_windows_file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_labels_of_data_windows(labels_of_data_windows))
-        res = SplitToWindowsData(data_windows_df_file_ID=data_windows_df_file_ID, labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
+        data_windows_df_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_data_windows_df(data_windows))
+        labels_of_data_windows_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_labels_of_data_windows(labels_of_data_windows))
+        res = FeatureExtractionData(data_windows_df_file_ID=data_windows_df_file_ID, labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
         training_data_set.split_to_windows_cache[str(sliding_window)] = res
         self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
 
@@ -86,13 +86,13 @@ class DataSetManager():
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
-        return SplitToWindowsData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
+        return FeatureExtractionData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
 
     def add_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature, feature_df: DataFrame):
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_IDs_dict = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs
-        file_ID = self.file_repository.put_file(SplitToWindowsData.serialize_sensor_component_feature_df(feature_df))
+        file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_sensor_component_feature_df(feature_df))
         if sensor_component in file_IDs_dict.keys():
             file_IDs_dict[sensor_component][feature] = file_ID
         else:

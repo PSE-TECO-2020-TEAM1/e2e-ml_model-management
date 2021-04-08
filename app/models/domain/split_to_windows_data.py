@@ -8,7 +8,7 @@ import pickle
 
 
 @dataclass
-class SplitToWindowsData():
+class FeatureExtractionData():
     data_windows_df_file_ID: ObjectId
     labels_of_data_windows_file_ID: ObjectId
     sensor_component_feature_df_file_IDs: Dict[SensorComponent, Dict[Feature, ObjectId]] = field(default_factory=dict)
