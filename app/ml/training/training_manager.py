@@ -11,7 +11,7 @@ from app.models.domain.sensor import Sensor, SensorComponent, make_sensor_compon
 from typing import Dict, List
 from app.models.domain.training_config import FeatureExtractionConfig, PipelineConfig, TrainingConfig
 from app.ml.objects.classification.classifier_config_spaces.util import validate_hyperparameters
-from app.models.schemas.training_config import FeatureExtractionConfigPerSensorComponent, PipelineConfigPerSensorComponent, TrainingConfigInTrain
+from app.models.schemas.training_config import PerComponentConfig, TrainingConfigInTrain
 
 
 def initiate_new_training(workspace_id: ObjectId, training_config_in_train: TrainingConfigInTrain):
@@ -41,26 +41,26 @@ def parse_config(training_config: TrainingConfigInTrain) -> TrainingConfig:
     params = {}
     params["model_name"] = training_config.modelName
     sliding_window = SlidingWindow(training_config.windowSize, training_config.slidingStep)
-    parsed = parse_feature_extraction_config(training_config.featureExtractionConfig)
+    parsed = parse_feature_extraction_config(training_config.perComponentConfigs)
     params["feature_extraction_config"] = FeatureExtractionConfig(sliding_window, parsed)
-    params["pipeline_config"] = parse_pipeline_config(training_config.pipelineConfig)
+    params["pipeline_config"] = parse_pipeline_config(training_config.perComponentConfigs)
     params["classifier"] = training_config.classifier
     params["hyperparameters"] = training_config.hyperparameters
     return TrainingConfig(**params)
 
 
-def parse_feature_extraction_config(feature_extraction_config: List[FeatureExtractionConfigPerSensorComponent]) -> Dict[SensorComponent, List[Feature]]:
+def parse_feature_extraction_config(per_component_config: List[PerComponentConfig]) -> Dict[SensorComponent, List[Feature]]:
     res = {}
-    for item in feature_extraction_config:
+    for item in per_component_config:
         features = item.features
         sensor_component = make_sensor_component(item.sensor, item.component)
         res[sensor_component] = features
     return res
 
 
-def parse_pipeline_config(pipeline_config: List[PipelineConfigPerSensorComponent]) -> Dict[SensorComponent, PipelineConfig]:
+def parse_pipeline_config(per_component_configs: List[PerComponentConfig]) -> Dict[SensorComponent, PipelineConfig]:
     res = {}
-    for item in pipeline_config:
+    for item in per_component_configs:
         sensor_component = make_sensor_component(item.sensor, item.component)
         res[sensor_component] = PipelineConfig(imputation=item.imputation, normalization=item.normalization)
     return res

@@ -1,4 +1,5 @@
-from app.ml.util.data_processing import extract_features, split_to_data_windows
+from app.models.domain.ml_model import MlModel
+from app.ml.util.data_processing import calculate_classification_report, extract_features, split_to_data_windows
 from pandas.core.frame import DataFrame
 from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
@@ -10,12 +11,12 @@ from pymongo.database import Database
 from app.models.domain.training_config import TrainingConfig
 from app.ml.training.data_set_manager import DataSetManager
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 import pandas as pd
 
 class Trainer():
 
     def __init__(self, training_config: TrainingConfig, data_set_manager: DataSetManager, create_db: Callable[[], Database]):
+        self.training_config = training_config
         self.feature_extraction_config = training_config.feature_extraction_config
         self.pipeline_config = training_config.pipeline_config
         self.classifier = training_config.classifier
@@ -34,20 +35,30 @@ class Trainer():
         # Get the data frame ready for pipeline
         x, y = self.gather_features_and_labels()
         # We have to sort the columns correctly when we are predicting later so we save the order
-        columns = x.columns
+        columns = x.columns.tolist()
         # Encode labels
-        label_encoder = LabelEncoder().fit(y)
-        y = label_encoder.transform(y)
+        label_encoder = LabelEncoder()
+        print(y)
+        y = label_encoder.fit_transform(y)
+        print(y)
         # Train-test-split
         x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=42)
         # Create the pipeline
         pipeline = make_pipeline_from_config(self.pipeline_config, self.classifier, self.hyperparameters)
         # Fit the model
         pipeline.fit(x_train, y_train)
+        # Calculate performance metrics
+        test_prediction_result = pipeline.predict(x_test)
+        performance_metrics = calculate_classification_report(test_prediction_result, y_test, label_encoder)
+        self.data_set_manager.save_model(
+            config=self.training_config,
+            label_performance_metrics=performance_metrics,
+            column_order=columns,
+            label_encoder=label_encoder,
+            pipeline=pipeline
+        )
+        exit(0)
         
-        #TODO metrics and persistence of pipeline, encoder... (CACHE DOES NOT WORK FOR FEATURES (FOR SAMPLES OK THO))
-        print(classification_report(y_test, pipeline.predict(x_test), output_dict=True))
-
 
     def gather_features_and_labels(self) -> Tuple[DataFrame, List[str]]:
         sliding_window = self.feature_extraction_config.sliding_window
@@ -60,7 +71,8 @@ class Trainer():
                     result.append(self.data_set_manager.get_cached_sensor_component_feature(sliding_window, sensor_component, feature))
                 else:
                     uncached_features.append(feature)
-            to_be_calculated[sensor_component] = uncached_features
+            if uncached_features:
+                to_be_calculated[sensor_component] = uncached_features
         if to_be_calculated:
             result += self.extract_sensor_component_features(to_be_calculated)
         labels = self.data_set_manager.get_labels_of_data_windows(self.feature_extraction_config.sliding_window)

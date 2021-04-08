@@ -1,10 +1,13 @@
+from app.models.domain.performance_metrics import PerformanceMetrics, SingleMetric
 from app.ml.objects.feature import Feature
 from app.models.domain.sample import InterpolatedSample
 from pandas.core.frame import DataFrame
 from typing import Dict, List, Tuple
 from app.models.domain.sliding_window import SlidingWindow
-import tsfresh
 from tsfresh.feature_extraction import ComprehensiveFCParameters
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
+import tsfresh
 import pandas
 
 
@@ -38,4 +41,19 @@ def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[F
     for feature_index in range(len(features)):
         feature = features[feature_index]
         result[feature] = extracted.iloc[:, [feature_index]]
+    return result
+
+def calculate_classification_report(test_labels: List[int], prediction_result: List[int], encoder: LabelEncoder) -> List[PerformanceMetrics]:
+    print(prediction_result)
+    report = classification_report(test_labels, prediction_result, output_dict=True)
+    print(report)
+    result: List[PerformanceMetrics] = []
+    for encoded_label, performance_metric in report.items():
+        if (not encoded_label.isnumeric()) or (type(performance_metric) is not dict):
+            continue
+        metrics = []
+        for name, score in performance_metric.items():
+            metrics.append(SingleMetric(name=name, score=score))
+        label = encoder.inverse_transform([int(encoded_label)])[0]
+        result.append(PerformanceMetrics(label=label, metrics=metrics))
     return result

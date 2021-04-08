@@ -1,6 +1,10 @@
+from app.db.sync.ml_model_repository import MlModelRepository
+from app.models.domain.ml_model import MlModel
+from app.models.domain.performance_metrics import PerformanceMetrics
+from app.models.domain.training_config import TrainingConfig
 from app.ml.util.sample_parsing import parse_samples_from_workspace
 from app.models.domain.sample import InterpolatedSample
-from app.models.domain.split_to_windows_data import FeatureExtractionData
+from app.models.domain.feature_extraction_data import FeatureExtractionData
 from app.models.domain.sliding_window import SlidingWindow
 from pandas.core.frame import DataFrame
 from app.ml.objects.feature.enum import Feature
@@ -27,6 +31,7 @@ class DataSetManager():
     def set_db(self, db: Database):
         self.file_repository = FileRepository(db)
         self.workspace_repository = WorkspaceRepository(db)
+        self.ml_model_repository = MlModelRepository(db)
 
     def update_training_data_set(self):
         self.is_valid_cache_manager()
@@ -52,7 +57,7 @@ class DataSetManager():
     def get_labels_of_data_windows(self, sliding_window: SlidingWindow) -> List[str]:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].labels_of_data_windows_file_ID
+        file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].labels_of_data_windows_file_ID
         return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
 
     def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
@@ -63,7 +68,7 @@ class DataSetManager():
     def get_cached_split_to_windows(self, sliding_window: SlidingWindow) -> DataFrame:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].data_windows_df_file_ID
+        file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].data_windows_df_file_ID
         return FeatureExtractionData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
 
     def add_split_to_windows(self, sliding_window: SlidingWindow, data_windows: DataFrame, labels_of_data_windows: List[str]):
@@ -72,7 +77,7 @@ class DataSetManager():
         data_windows_df_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_data_windows_df(data_windows))
         labels_of_data_windows_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_labels_of_data_windows(labels_of_data_windows))
         res = FeatureExtractionData(data_windows_df_file_ID=data_windows_df_file_ID, labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
-        training_data_set.split_to_windows_cache[str(sliding_window)] = res
+        training_data_set.feature_extraction_cache[str(sliding_window)] = res
         self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
 
     def is_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> bool:
@@ -80,20 +85,28 @@ class DataSetManager():
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         if not training_data_set.sliding_window_in_cache(sliding_window):
             return False
-        return training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_in_cache(sensor_component, feature)
+        return training_data_set.feature_extraction_cache[str(sliding_window)].sensor_component_feature_in_cache(sensor_component, feature)
 
     def get_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> DataFrame:
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
+        file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
         return FeatureExtractionData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
 
     def add_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature, feature_df: DataFrame):
         self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_IDs_dict = training_data_set.split_to_windows_cache[str(sliding_window)].sensor_component_feature_df_file_IDs
+        file_IDs_dict = training_data_set.feature_extraction_cache[str(sliding_window)].sensor_component_feature_df_file_IDs
         file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_sensor_component_feature_df(feature_df))
         if sensor_component in file_IDs_dict.keys():
             file_IDs_dict[sensor_component][feature] = file_ID
         else:
             file_IDs_dict[sensor_component] = {feature: file_ID}
+        self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
+
+    def save_model(self, config, label_performance_metrics, column_order, label_encoder, pipeline):
+        label_encoder_file_ID = self.file_repository.put_file(MlModel.serialize_label_encoder(label_encoder))
+        pipeline_object_file_ID = self.file_repository.put_file(MlModel.serialize_pipeline(pipeline))
+        model_in_db = MlModel(config, label_performance_metrics, column_order, label_encoder_file_ID, pipeline_object_file_ID)
+        model_id = self.ml_model_repository.add_ml_model(model_in_db)
+        self.workspace_repository.add_ml_model_ref(self.workspace_id, model_id)
