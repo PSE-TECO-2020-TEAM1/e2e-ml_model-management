@@ -1,4 +1,3 @@
-from app.models.domain.ml_model import MlModel
 from app.ml.util.data_processing import calculate_classification_report, extract_features, split_to_data_windows
 from pandas.core.frame import DataFrame
 from app.ml.objects.feature.enum import Feature
@@ -60,7 +59,7 @@ class Trainer():
 
     def gather_features_and_labels(self) -> Tuple[DataFrame, List[str]]:
         sliding_window = self.feature_extraction_config.sliding_window
-        result = []
+        result: List[DataFrame] = [] # data windows of one sensor component and one feature (only one column)
         to_be_calculated: Dict[SensorComponent, List[Feature]] = {}
         for sensor_component, features in self.feature_extraction_config.sensor_component_features.items():
             uncached_features = []
@@ -86,7 +85,7 @@ class Trainer():
             # Compute and add to cache otherwise along with the labels
             data_windows, labels_of_data_windows = split_to_data_windows(sliding_window, self.data_set_manager.get_sample_list())
             self.data_set_manager.add_split_to_windows(sliding_window, data_windows, labels_of_data_windows)
-        result = []
+        result = [] # data windows of one sensor component and one feature (only one column)
         for sensor_component, features in sensor_component_features.items():
             features = extract_features(data_windows[[sensor_component, "id"]], features)
             for feature in features:
