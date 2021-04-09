@@ -17,10 +17,7 @@ def initiate_new_training(workspace_id: ObjectId, training_config_in_train: Trai
     config = parse_config(training_config_in_train)
     data_set_manager = DataSetManager(workspace_id, WorkspaceDataSource())
     trainer = Trainer(training_config=config, data_set_manager=data_set_manager, create_db=create_sync_db)
-    import time
-    start = time.time()
     Process(target=trainer.train).start()
-    print(time.time() - start)
 
 
 def validate_config(training_config: TrainingConfigInTrain, workspace_sensors: Dict[str, Sensor]):
@@ -32,6 +29,14 @@ def validate_config(training_config: TrainingConfigInTrain, workspace_sensors: D
         raise ValueError("Sliding step cannot excess the window size")
 
     # TODO IMPORTANT validate that feature extraction and pipeline configs are consistent (component names, number of components for each ?)
+
+    for per_component_config in training_config.perComponentConfigs:
+        sensor_name = per_component_config.sensor
+        component_name = per_component_config.component
+        if sensor_name not in workspace_sensors:
+            raise ValueError(sensor_name + "is not a sensor of this workspace")
+        if component_name not in workspace_sensors[sensor_name].components:
+            raise ValueError(component_name + "not a valid component of " + sensor_name)
 
     validate_hyperparameters(training_config.classifier, training_config.hyperparameters)
 

@@ -53,16 +53,16 @@ class DataSetManager():
         sample_list_file = self.file_repository.get_file(training_data_set.sample_list_file_ID)
         return TrainingDataSet.deserialize_sample_list(sample_list_file)
 
+    def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
+        self.is_valid_cache_manager()
+        training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+        return training_data_set.sliding_window_in_cache(sliding_window)
+
     def get_labels_of_data_windows(self, sliding_window: SlidingWindow) -> List[str]:
-        self.is_valid_data_set_manager()
+        self.is_valid_cache_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].labels_of_data_windows_file_ID
         return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
-
-    def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
-        self.is_valid_data_set_manager()
-        training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        return training_data_set.sliding_window_in_cache(sliding_window)
 
     def get_cached_split_to_windows(self, sliding_window: SlidingWindow) -> DataFrame:
         self.is_valid_data_set_manager()
