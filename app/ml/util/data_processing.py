@@ -8,7 +8,7 @@ from tsfresh.feature_extraction import ComprehensiveFCParameters
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 import tsfresh
-import pandas
+import pandas as pd
 
 
 def split_to_data_windows(sliding_window: SlidingWindow, samples: List[InterpolatedSample]) -> Tuple[DataFrame, List[str]]:
@@ -25,8 +25,20 @@ def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Interpola
             id_counter += 1
             data_windows.append(data_window)
             labels.append(sample.label)
-    result = pandas.concat(data_windows, ignore_index=True)
+    result = pd.concat(data_windows, ignore_index=True)
     return (result, labels)
+
+def roll_data_frame(sliding_window: SlidingWindow, data_frame: DataFrame) -> DataFrame:
+    window_size = sliding_window.window_size
+    sliding_step = sliding_window.sliding_step
+    data_windows: List[DataFrame] = []
+    id_counter = 0
+    for window_offset in range(0, len(data_frame.index) - window_size + 1, sliding_step):
+        data_window = data_frame.iloc[window_offset:window_offset + window_size, :].copy()
+        data_window["id"] = id_counter
+        id_counter += 1
+        data_windows.append(data_window)
+    return pd.concat(data_windows, ignore_index=True)
 
 
 def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:

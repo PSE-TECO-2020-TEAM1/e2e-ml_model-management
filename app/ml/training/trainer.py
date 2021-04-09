@@ -74,7 +74,7 @@ class Trainer():
         if to_be_calculated:
             result += self.extract_sensor_component_features(to_be_calculated)
         labels = self.data_set_manager.get_labels_of_data_windows(self.feature_extraction_config.sliding_window)
-        return (pd.concat(result, axis=1), labels)
+        return (pd.concat(result, axis=1, ignore_index=True), labels)
 
     def extract_sensor_component_features(self, sensor_component_features: Dict[SensorComponent, List[Feature]]) -> List[DataFrame]:
         sliding_window = self.feature_extraction_config.sliding_window
