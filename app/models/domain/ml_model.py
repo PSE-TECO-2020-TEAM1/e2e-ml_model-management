@@ -2,7 +2,7 @@ from sklearn.pipeline import Pipeline
 from app.models.domain.performance_metrics import PerformanceMetrics
 from app.models.domain.training_config import TrainingConfig
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import List
 from sklearn.preprocessing import LabelEncoder
 from bson.objectid import ObjectId
 import pickle

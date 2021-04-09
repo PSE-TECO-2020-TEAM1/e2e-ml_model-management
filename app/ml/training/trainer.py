@@ -38,9 +38,7 @@ class Trainer():
         columns = x.columns.tolist()
         # Encode labels
         label_encoder = LabelEncoder()
-        print(y)
         y = label_encoder.fit_transform(y)
-        print(y)
         # Train-test-split
         x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=42)
         # Create the pipeline

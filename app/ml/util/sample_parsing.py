@@ -1,9 +1,18 @@
+from app.models.schemas.sample import SampleInSubmit
 from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
 from app.models.domain.sample import InterpolatedSample
 import bisect
 from typing import Dict, List
 from pandas.core.frame import DataFrame
 from app.models.domain.sensor import Sensor
+
+# TODO IMPORTANT ADD DATA VALIDATION IN RESPECTIVE METHODS
+def parse_sample_in_predict(sample: SampleInSubmit, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+    timeframe = Timeframe(sample.start, sample.end)
+    timeframe_data = {}
+    for i in sample.sensorDataPoints:
+        timeframe_data[i.sensor] = i.dataPoints
+    return parse_timeframe(timeframe_data, timeframe, workspace_sensors)
 
 
 def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
@@ -14,6 +23,14 @@ def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_s
         invert_timeframes(sample)
         all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
     return all_interpolated_samples
+
+def parse_sample_from_workspace(sample: SampleFromWorkspace, workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
+    interpolated_timeframe_dfs = []
+    timeframe_data_list = split_data_by_timeframe(sample)
+    for timeframe, timeframe_data in timeframe_data_list:
+        interpolated_timeframe_dfs.append(parse_timeframe(timeframe_data, timeframe, workspace_sensors))
+    return [InterpolatedSample(label=sample.label, data_frame=df) for df in interpolated_timeframe_dfs]
+
     
 def invert_timeframes(sample: SampleFromWorkspace):
     timeframes = sample.timeFrames
@@ -29,20 +46,13 @@ def invert_timeframes(sample: SampleFromWorkspace):
         inverted_timeframes.append(between_two)
     sample.timeFrames = inverted_timeframes
 
-def parse_sample_from_workspace(sample: SampleFromWorkspace, workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
-    """
-    We treat each timeframe of a sample as a new sample internally, so this method also returns a list of interpolated samples
-    """
-    data_by_timeframe = split_data_by_timeframe(sample)
-    interpolated_timeframe_data_frames = []
+def parse_timeframe(timeframe_data: Dict[str, List[DataPoint]], timeframe: Timeframe, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+    df_data: Dict[Sensor, List[List[float]]] = {}
     delta = delta_of_sensors(list(workspace_sensors.values()))
-    for timeframe, timeframe_data in data_by_timeframe.items():
-        data_frame_data: Dict[Sensor, List[List[float]]] = {}
-        for sensor_name, sensor_data in timeframe_data.items():
-            sensor = workspace_sensors[sensor_name]
-            data_frame_data[sensor_name] = interpolate_sensor_data_points_in_timeframe(sensor_data, sensor, timeframe, delta)
-        interpolated_timeframe_data_frames.append(build_dataframe(data_frame_data, workspace_sensors))
-    return [InterpolatedSample(label=sample.label, data_frame=df) for df in interpolated_timeframe_data_frames]
+    for sensor_name, sensor_data in timeframe_data.items():
+        sensor = workspace_sensors[sensor_name]
+        df_data[sensor_name] = interpolate_sensor_data_points_in_timeframe(sensor_data, sensor, timeframe, delta)
+    return build_dataframe(df_data, workspace_sensors)
 
 # Interpolate data points from each sensor so that they all match the max
 def delta_of_sensors(sensors: List[Sensor]):
@@ -65,7 +75,7 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
                 component = sensor.components[component_index]
                 rows[i][component] = data[i][component_index]
     return DataFrame(rows)
- 
+
 def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict[str, List[DataPoint]]]:
     # Build key index for binary search
     sensor_timestamps = {}
@@ -114,7 +124,3 @@ def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], se
             interpolated_datapoint.append(interpolated_value)
         result.append(interpolated_datapoint)
     return result
-    
-    
-    
-    

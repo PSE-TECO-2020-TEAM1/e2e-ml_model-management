@@ -16,8 +16,6 @@ def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Interpola
     data_windows: List[DataFrame] = []
     id_counter = 0
     (window_size, sliding_step) = (sliding_window.window_size, sliding_window.sliding_step)
-    import time
-    start = time.time()
     for sample in samples:
         sensor_data_points = sample.data_frame
         # For each window in this sample, increment by the sliding step value starting from 0
@@ -28,14 +26,11 @@ def split_to_data_windows(sliding_window: SlidingWindow, samples: List[Interpola
             data_windows.append(data_window)
             labels.append(sample.label)
     result = pandas.concat(data_windows, ignore_index=True)
-    print(result)
-    print(time.time() - start)
     return (result, labels)
 
 
 def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:
     settings = {key: ComprehensiveFCParameters()[key] for key in [str(feature.value).lower() for feature in features]}
-    print(data_windows)
     extracted: DataFrame = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
     result = {}
     for feature_index in range(len(features)):
@@ -44,9 +39,7 @@ def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[F
     return result
 
 def calculate_classification_report(test_labels: List[int], prediction_result: List[int], encoder: LabelEncoder) -> List[PerformanceMetrics]:
-    print(prediction_result)
     report = classification_report(test_labels, prediction_result, output_dict=True)
-    print(report)
     result: List[PerformanceMetrics] = []
     for encoded_label, performance_metric in report.items():
         if (not encoded_label.isnumeric()) or (type(performance_metric) is not dict):

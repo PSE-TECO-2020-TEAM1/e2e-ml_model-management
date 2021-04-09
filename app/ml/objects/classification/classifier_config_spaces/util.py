@@ -5,6 +5,7 @@ from app.ml.objects.classification.classifier_config_spaces import (kneighbours_
                                                                     mlp_classifier,
                                                                     random_forest_classifier,
                                                                     svc_classifier)
+from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, UniformFloatHyperparameter, CategoricalHyperparameter, Constant        
 
 # Config spaces are all from https://github.com/automl/auto-sklearn/tree/master/autosklearn/pipeline/components/classification
 
@@ -20,7 +21,19 @@ def validate_hyperparameters(classifier: Classifier, hyperparameters: Dict[str, 
     Configuration(config_spaces[classifier], values=hyperparameters)
 
 def get_hyperparameters(classifier: Classifier) -> Dict[str, Any]:
-    return config_spaces[classifier].get_default_configuration().get_dictionary()
+    res = {}
+    hyperparameters = config_spaces[classifier].get_hyperparameters_dict()
+    for name, hyperparameter in hyperparameters.items():
+        if isinstance(hyperparameter, CategoricalHyperparameter):
+            res[name] = {"choices": hyperparameter.choices, "default_value": hyperparameter.default_value}
+        elif isinstance(hyperparameter, Constant):
+            res[name] = {"value": hyperparameter.value}
+        elif isinstance(hyperparameter, UniformIntegerHyperparameter) or isinstance(hyperparameter, UniformFloatHyperparameter):
+            res[name] = {"lower": hyperparameter.lower, "upper": hyperparameter.upper, "default_value": hyperparameter.default_value}
+        else:
+            raise NotImplementedError(type(hyperparameter).__name__ + ' is not supported')
+        res[name]["type"] = type(hyperparameter).__name__
+    return res
 
 def get_conditions(classifier: Classifier) -> List[str]:
     return [str(condition) for condition in config_spaces[classifier].get_conditions()]
