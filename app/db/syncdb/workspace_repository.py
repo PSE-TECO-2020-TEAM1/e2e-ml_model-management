@@ -24,8 +24,6 @@ class WorkspaceRepository():
         """
         field with dot notation
         """
-        if not hasattr(Workspace, field):
-            raise NonExistentError("This workspace field does not exist")
         result = self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})
         if not result:
             raise NonExistentError("Could not set " + field)

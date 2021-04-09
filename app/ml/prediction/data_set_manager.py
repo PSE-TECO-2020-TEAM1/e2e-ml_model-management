@@ -2,9 +2,9 @@ from app.models.domain.training_config import FeatureExtractionConfig
 from typing import Dict, List
 from app.models.domain.sensor import Sensor
 from app.models.domain.sliding_window import SlidingWindow
-from app.db.sync.ml_model_repository import MlModelRepository
-from app.db.sync.file_repository import FileRepository
-from app.db.sync.workspace_repository import WorkspaceRepository
+from app.db.syncdb.ml_model_repository import MlModelRepository
+from app.db.syncdb.file_repository import FileRepository
+from app.db.syncdb.workspace_repository import WorkspaceRepository
 from app.models.domain.ml_model import MlModel
 from bson.objectid import ObjectId
 from pymongo.database import Database

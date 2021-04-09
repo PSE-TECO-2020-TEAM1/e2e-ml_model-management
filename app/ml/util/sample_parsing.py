@@ -7,6 +7,8 @@ from pandas.core.frame import DataFrame
 from app.models.domain.sensor import Sensor
 
 # TODO IMPORTANT ADD DATA VALIDATION IN RESPECTIVE METHODS
+
+
 def parse_sample_in_predict(sample: SampleInSubmit, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
     timeframe = Timeframe(sample.start, sample.end)
     timeframe_data = {}
@@ -24,14 +26,15 @@ def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_s
         all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
     return all_interpolated_samples
 
+
 def parse_sample_from_workspace(sample: SampleFromWorkspace, workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
     interpolated_timeframe_dfs = []
-    timeframe_data_list = split_data_by_timeframe(sample)
-    for timeframe, timeframe_data in timeframe_data_list:
+    timeframe_data_dict = split_data_by_timeframe(sample)
+    for timeframe, timeframe_data in timeframe_data_dict.items():
         interpolated_timeframe_dfs.append(parse_timeframe(timeframe_data, timeframe, workspace_sensors))
     return [InterpolatedSample(label=sample.label, data_frame=df) for df in interpolated_timeframe_dfs]
 
-    
+
 def invert_timeframes(sample: SampleFromWorkspace):
     timeframes = sample.timeFrames
     inverted_timeframes: List[Timeframe] = []
@@ -45,6 +48,7 @@ def invert_timeframes(sample: SampleFromWorkspace):
         between_two = Timeframe(start=timeframes[i].end, end=timeframes[i+1].start)
         inverted_timeframes.append(between_two)
     sample.timeFrames = inverted_timeframes
+
 
 def parse_timeframe(timeframe_data: Dict[str, List[DataPoint]], timeframe: Timeframe, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
     df_data: Dict[Sensor, List[List[float]]] = {}
@@ -74,10 +78,9 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
         data_by_timeframe[timeframe] = data_in_timeframe
     return data_by_timeframe
 
-# Interpolate data points from each sensor so that they all match the max.
-
 
 def delta_of_sensors(sensors: List[Sensor]) -> float:
+    # Interpolate data points from each sensor so that they all match the max.
     max: int = -1
     for sensor in sensors:
         if sensor.sampling_rate > max:
@@ -99,17 +102,9 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
                 rows[i][component] = data[i][component_index]
     return DataFrame(rows)
 
-def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict[str, List[DataPoint]]]:
-    # Build key index for binary search
-    sensor_timestamps = {}
-    for i in range(len(sample.sensorDataPoints)):
-        sensor_name = sample.sensorDataPoints[i].sensor
-        datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
-        sensor_timestamps[sensor_name] = [datapoint.timestamp for datapoint in datapoints]
-
 
 def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
-    target_len = (timeframe.end - timeframe.start) // delta
+    target_len = int((timeframe.end - timeframe.start) // delta)
 
     # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
     if not data_points:

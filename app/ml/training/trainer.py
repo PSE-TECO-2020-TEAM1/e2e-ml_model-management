@@ -34,6 +34,7 @@ class Trainer():
         self.setup()
         # Get the data frame ready for pipeline
         x, y = self.gather_features_and_labels()
+        print(x)
         # We have to sort the columns correctly when we are predicting later so we save the order
         columns = x.columns.tolist()
         # Encode labels
@@ -74,7 +75,7 @@ class Trainer():
         if to_be_calculated:
             result += self.extract_sensor_component_features(to_be_calculated)
         labels = self.data_set_manager.get_labels_of_data_windows(self.feature_extraction_config.sliding_window)
-        return (pd.concat(result, axis=1, ignore_index=True), labels)
+        return (pd.concat(result, axis=1), labels)
 
     def extract_sensor_component_features(self, sensor_component_features: Dict[SensorComponent, List[Feature]]) -> List[DataFrame]:
         sliding_window = self.feature_extraction_config.sliding_window

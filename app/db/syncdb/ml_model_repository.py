@@ -18,6 +18,6 @@ class MlModelRepository():
             raise NonExistentError("Workspace with the given id does not exist")
         return dacite.from_dict(data_class=MlModel, data=ml_model, config=dacite.Config(cast=[SensorComponent]))
 
-    
     def add_ml_model(self, ml_model: MlModel) -> ObjectId:
+        print(asdict(ml_model))
         self.collection.insert_one(asdict(ml_model))

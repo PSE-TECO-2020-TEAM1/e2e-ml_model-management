@@ -15,5 +15,4 @@ class Workspace():
     sensors: Dict[str, Sensor]
     training_data_set: TrainingDataSet
     training_state: TrainingState
-    prediction_IDs: List[PredictionID] = field(default_factory=list)
-    trained_ml_model_refs: List[MlModel] = field(default_factory=list)
+    trained_ml_model_refs: List[ObjectId] = field(default_factory=list)

@@ -15,7 +15,7 @@ class PredictionUtil():
     process: Process
     semaphore: SemaphoreType
     manager_end: Connection
-    last_access = field(default_factory=datetime.utcnow)
+    last_access: datetime = field(default_factory=datetime.utcnow)
 
 
 class PredictionManager():

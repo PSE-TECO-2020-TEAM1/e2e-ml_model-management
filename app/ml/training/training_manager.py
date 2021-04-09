@@ -1,6 +1,5 @@
-from multiprocessing import process
 from multiprocessing.context import Process
-from app.db.sync import create_sync_db
+from app.db.syncdb import create_sync_db
 from app.models.domain.sliding_window import SlidingWindow
 from app.workspace_management_api.stub_source_delete import WorkspaceDataSource
 from app.ml.training.trainer import Trainer
