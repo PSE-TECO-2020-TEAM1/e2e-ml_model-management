@@ -4,7 +4,7 @@ from dataclasses import asdict
 from typing import Dict
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
-from app.db.error.non_existant_error import NonExistentError
+from app.db.error.non_existent_error import NonExistentError
 from app.models.domain.workspace import Workspace
 from pymongo.database import Database
 from app.core.config import WORKSPACE_COLLECTION_NAME
