@@ -1,5 +1,5 @@
 from app.models.schemas.sample import SampleInSubmit
-from app.ml.prediction.predictor import PredictionResult, Predictor, PredictorEntry
+from app.ml.prediction.predictor import Predictor
 import asyncio
 from datetime import datetime
 from multiprocessing import Semaphore
@@ -63,11 +63,11 @@ class PredictionManager():
         util.manager_end.send(data)
         util.semaphore.release()
 
-    def get_prediction_results(self, prediction_id: ObjectId) -> List[PredictionResult]:
-        results: List[PredictionResult] = []
+    def get_prediction_results(self, prediction_id: ObjectId) -> List[str]:
+        results: List[str] = []
         result_pipe = self.prediction_id_to_util[prediction_id].manager_end
         while result_pipe.poll():
-            results.append(result_pipe.recv())
+            results += result_pipe.recv()
         return results
 
 prediction_manager = PredictionManager()

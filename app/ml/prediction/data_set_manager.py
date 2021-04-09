@@ -1,4 +1,5 @@
-from typing import Dict
+from app.models.domain.training_config import FeatureExtractionConfig
+from typing import Dict, List
 from app.models.domain.sensor import Sensor
 from app.models.domain.sliding_window import SlidingWindow
 from app.db.sync.ml_model_repository import MlModelRepository
@@ -29,9 +30,13 @@ class DataSetManager():
     def get_workspace_sensors(self) -> Dict[str, Sensor]:
         return self.workspace_repository.get_workspace(self.workspace_id).sensors
 
-    def get_sliding_window(self) -> SlidingWindow:
+    def get_feature_extraction_config(self) -> FeatureExtractionConfig:
         ml_model = self.get_ml_model()
-        return ml_model.config.feature_extraction_config.sliding_window
+        return ml_model.config.feature_extraction_config
+
+    def get_column_order(self) -> List[str]:
+        ml_model = self.get_ml_model()
+        return ml_model.column_order
 
     def get_label_encoder(self) -> LabelEncoder:
         ml_model = self.get_ml_model()

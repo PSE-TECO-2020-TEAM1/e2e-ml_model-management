@@ -40,4 +40,4 @@ class WorkspaceRepository():
     def add_ml_model_ref(self, workspace_id: ObjectId, ml_model_id: ObjectId):
         result = self.collection.update_one({"_id": workspace_id}, {"$push": {"trained_ml_model_refs": ml_model_id}})
         if not result:
-            raise NonExistentError("Could not set " + field)
+            raise NonExistentError("Could not set ML model reference")
