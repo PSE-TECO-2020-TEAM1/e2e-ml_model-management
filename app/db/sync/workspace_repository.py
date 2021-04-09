@@ -1,7 +1,7 @@
 from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
 from dataclasses import asdict
-from typing import Dict
+from typing import Any, Dict
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
 from app.db.error.non_existent_error import NonExistentError
@@ -20,10 +20,12 @@ class WorkspaceRepository():
             raise NonExistentError("Workspace with the given id does not exist")
         return dacite.from_dict(data_class=Workspace, data=workspace, config=dacite.Config(cast=[SensorComponent, Feature]))
 
-    def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Dict):
+    def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Any):
         """
         field with dot notation
         """
+        if not hasattr(Workspace, field):
+            raise NonExistentError("This workspace field does not exist")
         result = self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})
         if not result:
             raise NonExistentError("Could not set " + field)
