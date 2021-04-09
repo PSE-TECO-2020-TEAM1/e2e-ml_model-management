@@ -23,6 +23,6 @@ test_workspace = asdict(Workspace(
         "Gyroscope": Sensor(sampling_rate=50, components=["x_Gyroscpoe", "y_Gyroscope", "z_Gyroscope"])
     },
     training_data_set=TrainingDataSet(last_modified=1),
-    training_state=TrainingState()
 ))
+print(test_workspace)
 coll.insert_one(test_workspace)

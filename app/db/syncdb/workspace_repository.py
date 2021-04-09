@@ -1,3 +1,4 @@
+from enum import Enum
 from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
 from dataclasses import asdict
@@ -18,7 +19,7 @@ class WorkspaceRepository():
         workspace = self.collection.find_one({"_id": workspace_id})
         if workspace is None:
             raise NonExistentError("Workspace with the given id does not exist")
-        return dacite.from_dict(data_class=Workspace, data=workspace, config=dacite.Config(cast=[SensorComponent, Feature]))
+        return dacite.from_dict(data_class=Workspace, data=workspace, config=dacite.Config(cast=[SensorComponent, Enum]))
 
     def set_workspace_field(self, workspace_id: ObjectId, field: str, value: Any):
         """

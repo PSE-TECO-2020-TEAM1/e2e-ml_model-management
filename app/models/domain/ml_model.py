@@ -10,12 +10,12 @@ import pickle
 
 @dataclass(frozen=True)
 class MlModel():
-    _id: Optional[ObjectId]
     config: TrainingConfig
     label_performance_metrics: List[PerformanceMetrics]
     column_order: List[str] # order of features e.g x_Accelerometer__min
     label_encoder_object_file_ID: ObjectId 
     pipeline_object_file_ID: ObjectId
+    _id: Optional[ObjectId] = None
     prediction_IDs: List[PredictionID] = field(default_factory=list)
 
     @staticmethod

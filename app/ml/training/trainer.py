@@ -33,7 +33,6 @@ class Trainer():
         self.setup()
         # Get the data frame ready for pipeline
         x, y = self.gather_features_and_labels()
-        print(x)
         # We have to sort the columns correctly when we are predicting later so we save the order
         columns = x.columns.tolist()
         # Encode labels

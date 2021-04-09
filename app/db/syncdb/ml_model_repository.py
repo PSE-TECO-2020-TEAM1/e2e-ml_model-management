@@ -19,5 +19,7 @@ class MlModelRepository():
         return dacite.from_dict(data_class=MlModel, data=ml_model, config=dacite.Config(cast=[SensorComponent]))
 
     def add_ml_model(self, ml_model: MlModel) -> ObjectId:
-        print(asdict(ml_model))
-        self.collection.insert_one(asdict(ml_model))
+        ml_model_dict = asdict(ml_model)
+        # Discard _id, so that MongoDB assigns a new one
+        del ml_model_dict["_id"]
+        self.collection.insert_one(ml_model_dict)
