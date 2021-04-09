@@ -10,7 +10,7 @@ class MlModelRepositoryStub():
         self.models: Dict[ObjectId, MlModel] = {}
         self.__insert_stubs__()
 
-    def __insert_stubs__():
+    def __insert_stubs__(self):
         # TODO add stub models
         pass
 
