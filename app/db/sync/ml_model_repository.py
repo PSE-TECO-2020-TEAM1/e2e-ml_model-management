@@ -1,6 +1,5 @@
 from app.models.domain.sensor import SensorComponent
-from app.ml.objects.feature.enum import Feature
-from app.db.error.non_existant_error import NonExistentError
+from app.db.error.non_existent_error import NonExistentError
 from dataclasses import asdict
 from app.models.domain.ml_model import MlModel
 from pymongo.database import Database

@@ -1,7 +1,5 @@
 from app.db.sync.ml_model_repository import MlModelRepository
 from app.models.domain.ml_model import MlModel
-from app.models.domain.performance_metrics import PerformanceMetrics
-from app.models.domain.training_config import TrainingConfig
 from app.ml.util.sample_parsing import parse_samples_from_workspace
 from app.models.domain.sample import InterpolatedSample
 from app.models.domain.feature_extraction_data import FeatureExtractionData
