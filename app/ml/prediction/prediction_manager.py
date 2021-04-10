@@ -1,5 +1,4 @@
 from app.models.schemas.prediction_data import PredictionData
-from app.models.schemas.sample import SampleInSubmit
 from app.ml.prediction.predictor import Predictor
 import asyncio
 from datetime import datetime

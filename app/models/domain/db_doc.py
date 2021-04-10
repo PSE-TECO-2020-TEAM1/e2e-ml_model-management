@@ -3,7 +3,7 @@ from typing import Dict, Optional
 from bson.objectid import ObjectId
 
 @dataclass
-class DbDocument():
+class DbDoc():
 
     _id: Optional[ObjectId]
 

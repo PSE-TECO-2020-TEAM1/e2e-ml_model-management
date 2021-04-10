@@ -106,6 +106,6 @@ class DataSetManager():
     def save_model(self, config, label_performance_metrics, column_order, label_encoder, pipeline):
         label_encoder_object_file_ID = self.file_repository.put_file(MlModel.serialize_label_encoder(label_encoder))
         pipeline_object_file_ID = self.file_repository.put_file(MlModel.serialize_pipeline(pipeline))
-        model_in_db = MlModel(config, label_performance_metrics, column_order, label_encoder_object_file_ID, pipeline_object_file_ID)
+        model_in_db = MlModel(None, config, label_performance_metrics, column_order, label_encoder_object_file_ID, pipeline_object_file_ID)
         model_id = self.ml_model_repository.add_ml_model(model_in_db)
         self.workspace_repository.add_ml_model_ref(self.workspace_id, model_id)

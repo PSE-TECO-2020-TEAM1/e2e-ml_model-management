@@ -1,4 +1,4 @@
-from app.models.domain.db_doc import DbDocument
+from app.models.domain.db_doc import DbDoc
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
 from app.models.domain.sensor import Sensor
@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from app.ml.training.training_state import TrainingState
 
 @dataclass
-class Workspace(DbDocument):
+class Workspace(DbDoc):
     user_id: ObjectId
     sensors: Dict[str, Sensor]
     training_data_set: TrainingDataSet = TrainingDataSet()

@@ -11,7 +11,7 @@ class DataPointsPerSensorInPredict(BaseModel):
     sensor: str
     dataPoints: List[DataPointInPredict]
 
-class SampleInPredict:
+class SampleInPredict(BaseModel):
     start: int
     end: int
     sensorDataPoints: List[DataPointsPerSensorInPredict]

@@ -1,5 +1,4 @@
 from app.ml.objects.feature.enum import Feature
-from app.models.domain.training_config import FeatureExtractionConfig
 from typing import Dict, List
 from app.models.domain.sensor import Sensor, SensorComponent
 from app.models.domain.sliding_window import SlidingWindow
@@ -23,7 +22,7 @@ class DataSetManager():
         self.ml_model_repository = MlModelRepository(db)
 
     def get_ml_model(self) -> MlModel:
-        # We can cache since MlModel is frozen
+        # Cache the model here
         if not self.ml_model:
             self.ml_model = self.ml_model_repository.get_ml_model(self.workspace_id)
         return self.ml_model

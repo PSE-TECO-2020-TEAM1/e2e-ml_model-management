@@ -26,5 +26,5 @@ async def get_prediction_key(prediction_id: ObjectId) -> PredictionKey:
     return key
 
 async def generate_prediction_id_for_model(workspace_id: ObjectId, ml_model_id: ObjectId):
-    key = PredictionKey(workspace_id=workspace_id, model_id=ml_model_id)
+    key = PredictionKey(None, workspace_id=workspace_id, model_id=ml_model_id)
     return await MlModelRepository(get_async_db()).add_prediction_key(key)

@@ -1,7 +1,5 @@
 from enum import Enum
 from typing import Any
-from app.models.domain.prediction_id import PredictionKey
-from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
 from app.core.config import WORKSPACE_COLLECTION_NAME
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase

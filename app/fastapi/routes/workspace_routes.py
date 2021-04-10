@@ -1,7 +1,7 @@
 from app.ml.training.training_state import TrainingState
 from app.models.domain.ml_model import MlModel
 from app.models.domain.workspace import Workspace
-from app.fastapi.services import add_prediction_id_to_model, generate_prediction_id_for_model, get_ml_model
+from app.fastapi.services import generate_prediction_id_for_model, get_ml_model
 from app.fastapi.dependencies import get_ml_model_by_id_from_path, get_workspace_by_id_from_path, validate_user_of_workspace
 from typing import List
 from app.models.schemas.ml_model import MlModelInResponse, MlModelMetadataInResponse
@@ -12,7 +12,6 @@ from app.ml.training.config_parsing import parse_config_for_response
 from starlette.responses import Response
 from fastapi import APIRouter, status
 from fastapi.param_functions import Depends
-from uuid import uuid4
 
 router = APIRouter(
     prefix="/workspaces",

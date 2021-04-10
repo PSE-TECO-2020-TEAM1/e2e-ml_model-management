@@ -1,5 +1,4 @@
 from dataclasses import asdict
-from app.models.domain.training_state import TrainingState
 from app.models.domain.training_data_set import TrainingDataSet
 from app.models.domain.sensor import Sensor
 from bson.objectid import ObjectId
