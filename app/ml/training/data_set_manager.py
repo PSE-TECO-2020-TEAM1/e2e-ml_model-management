@@ -54,12 +54,12 @@ class DataSetManager():
         return TrainingDataSet.deserialize_sample_list(sample_list_file)
 
     def is_cached_split_to_windows(self, sliding_window: SlidingWindow) -> bool:
-        self.is_valid_cache_manager()
+        self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         return training_data_set.sliding_window_in_cache(sliding_window)
 
     def get_labels_of_data_windows(self, sliding_window: SlidingWindow) -> List[str]:
-        self.is_valid_cache_manager()
+        self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].labels_of_data_windows_file_ID
         return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
@@ -106,9 +106,6 @@ class DataSetManager():
     def save_model(self, config, label_performance_metrics, column_order, label_encoder, pipeline):
         label_encoder_object_file_ID = self.file_repository.put_file(MlModel.serialize_label_encoder(label_encoder))
         pipeline_object_file_ID = self.file_repository.put_file(MlModel.serialize_pipeline(pipeline))
-        model_in_db = MlModel(config=config,
-                              label_performance_metrics=label_performance_metrics,
-                              column_order=column_order,
-                              label_encoder_object_file_ID=label_encoder_object_file_ID, pipeline_object_file_ID=pipeline_object_file_ID)
+        model_in_db = MlModel(config, label_performance_metrics, column_order, label_encoder_object_file_ID, pipeline_object_file_ID)
         model_id = self.ml_model_repository.add_ml_model(model_in_db)
         self.workspace_repository.add_ml_model_ref(self.workspace_id, model_id)

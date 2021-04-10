@@ -1,12 +1,11 @@
-from dataclasses import dataclass
 from enum import Enum
 
-@dataclass
 class TrainingState(str, Enum):
-    NO_ACTIVE_TRAINING = "no active training",
-    FEATURE_EXTRACTION = "feature extraction",
-    MODEL_FITTING = "model fitting",
-    MODEL_TRAINING = "model training",
-    CLASSIFICATION_REPORT = "classification report"
+    # TODO CAPITALIZE ?
+    NO_ACTIVE_TRAINING = "NO_ACTIVE_TRAINING",
+    FEATURE_EXTRACTION = "FEATURE_EXTRACTION",
+    MODEL_FITTING = "MODEL_FITTING",
+    MODEL_TRAINING = "MODEL_TRAINING",
+    CLASSIFICATION_REPORT = "CLASSIFICATION_REPORT"
     # TODO add error states
     

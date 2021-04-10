@@ -35,7 +35,7 @@ class PredictionManager():
             now = datetime.utcnow()
             for key, value in list(self.prediction_id_to_util.items()):
                 if (now - value.last_access).seconds > 5 * 60:  # Remove if inactive for more than 5 minutes
-                    print("cleaning up a process")
+                    print("Cleaning up a prediction process...")
                     value.process.terminate()
                     del self.prediction_id_to_util[key]
             await asyncio.sleep(1 * 60)  # Check once per minute
