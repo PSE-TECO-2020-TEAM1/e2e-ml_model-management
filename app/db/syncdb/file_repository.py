@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from gridfs import GridFS
 from pymongo.database import Database
+from app.db.error.non_existent_error import NonExistentError
 
 class FileRepository():
 
@@ -8,6 +9,8 @@ class FileRepository():
         self.fs = GridFS(db)
     
     def get_file(self, id: ObjectId) -> bytes:
+        if not self.fs.exists(id):
+            raise NonExistentError("The request file with the id " + str(id) + " does not exist")
         return self.fs.get(id).read()
 
     def put_file(self, file: bytes) -> ObjectId:
