@@ -8,7 +8,7 @@ import pickle
 
 @dataclass
 class TrainingDataSet():
-    last_modified: int
+    last_modified: int = -1 # Guaranteed to be invalid
     sample_list_file_ID: Optional[ObjectId] = None
     # https://bugs.python.org/issue43141 I cannot use SlidingWindow as key because of a Python bug. Temporarily use strings as key
     feature_extraction_cache: Dict[str, FeatureExtractionData] = field(default_factory=dict)

@@ -1,4 +1,4 @@
-from app.models.schemas.sample import SampleInSubmit
+from app.models.schemas.prediction_data import SampleInPredict
 from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
 from app.models.domain.sample import InterpolatedSample
 import bisect
@@ -9,7 +9,7 @@ from app.models.domain.sensor import Sensor
 # TODO IMPORTANT ADD DATA VALIDATION IN RESPECTIVE METHODS
 
 
-def parse_sample_in_predict(sample: SampleInSubmit, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+def parse_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
     timeframe = Timeframe(sample.start, sample.end)
     timeframe_data = {}
     for i in sample.sensorDataPoints:

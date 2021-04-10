@@ -1,6 +1,7 @@
+from app.ml.objects.feature.enum import Feature
 from app.models.domain.training_config import FeatureExtractionConfig
 from typing import Dict, List
-from app.models.domain.sensor import Sensor
+from app.models.domain.sensor import Sensor, SensorComponent
 from app.models.domain.sliding_window import SlidingWindow
 from app.db.syncdb.ml_model_repository import MlModelRepository
 from app.db.syncdb.file_repository import FileRepository
@@ -30,9 +31,13 @@ class DataSetManager():
     def get_workspace_sensors(self) -> Dict[str, Sensor]:
         return self.workspace_repository.get_workspace(self.workspace_id).sensors
 
-    def get_feature_extraction_config(self) -> FeatureExtractionConfig:
+    def get_sliding_window(self) -> SlidingWindow:
         ml_model = self.get_ml_model()
-        return ml_model.config.feature_extraction_config
+        return ml_model.config.sliding_window
+
+    def get_component_features(self) -> Dict[SensorComponent, List[Feature]]:
+        ml_model = self.get_ml_model()
+        return ml_model.config.get_component_features()
 
     def get_column_order(self) -> List[str]:
         ml_model = self.get_ml_model()

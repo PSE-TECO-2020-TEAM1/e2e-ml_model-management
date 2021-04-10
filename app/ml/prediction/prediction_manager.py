@@ -1,3 +1,4 @@
+from app.models.schemas.prediction_data import PredictionData
 from app.models.schemas.sample import SampleInSubmit
 from app.ml.prediction.predictor import Predictor
 import asyncio
@@ -40,7 +41,7 @@ class PredictionManager():
                     del self.prediction_id_to_util[key]
             await asyncio.sleep(1 * 60)  # Check once per minute
 
-    async def spawn_predictor(self, prediction_id: ObjectId, model_id: ObjectId):
+    def spawn_predictor(self, prediction_id: ObjectId, model_id: ObjectId):
         if prediction_id in self.prediction_id_to_util:
             return
         predictor = Predictor(model_id)
@@ -57,10 +58,10 @@ class PredictionManager():
         predictor_end.close()
         self.prediction_id_to_util[prediction_id] = PredictionUtil(process=process, semaphore=semaphore, manager_end=manager_end)
 
-    def submit_data(self, prediction_id: str, data: SampleInSubmit):
-        util = self.prediction_id_to_util[prediction_id]
+    def submit_data(self, prediction_data: PredictionData):
+        util = self.prediction_id_to_util[prediction_data.predictionId]
         util.last_access = datetime.utcnow()
-        util.manager_end.send(data)
+        util.manager_end.send(prediction_data.sample)
         util.semaphore.release()
 
     def get_prediction_results(self, prediction_id: ObjectId) -> List[str]:

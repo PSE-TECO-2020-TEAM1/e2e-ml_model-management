@@ -8,19 +8,31 @@ from app.ml.objects.feature import Feature
 from app.models.domain.sliding_window import SlidingWindow
 
 @dataclass
-class FeatureExtractionConfig():
-    sliding_window: SlidingWindow
-    sensor_component_features: Dict[SensorComponent, List[Feature]]
-
-@dataclass
 class PipelineConfig():
     imputation: Imputation
     normalization: Normalization
 
 @dataclass
+class PerComponentConfig():
+    features: List[Feature]
+    pipeline_config: PipelineConfig
+
+@dataclass
 class TrainingConfig():
     model_name: str
-    feature_extraction_config: FeatureExtractionConfig
-    pipeline_config: Dict[SensorComponent, PipelineConfig]
+    sliding_window: SlidingWindow
+    perComponentConfigs: Dict[SensorComponent, PerComponentConfig]
     classifier: Classifier
     hyperparameters: Dict[str, Any]
+
+    def get_component_features(self) -> Dict[SensorComponent, List[Feature]]:
+        features = {}
+        for sensor_component, config in self.perComponentConfigs.items():
+            features[sensor_component] = config.features
+        return features
+
+    def get_component_pipeline_configs(self) -> Dict[SensorComponent, PipelineConfig]:
+        pipeline_configs = {}
+        for sensor_component, config in self.perComponentConfigs.items():
+            pipeline_configs[sensor_component] = config.pipeline_config
+        return pipeline_configs

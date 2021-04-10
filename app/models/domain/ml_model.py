@@ -1,22 +1,27 @@
-from app.models.domain.prediction_id import PredictionID
+from app.models.domain.db_doc import DbDocument
+from app.models.domain.prediction_key import PredictionKey
 from sklearn.pipeline import Pipeline
 from app.models.domain.performance_metrics import PerformanceMetrics
 from app.models.domain.training_config import TrainingConfig
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional
 from sklearn.preprocessing import LabelEncoder
 from bson.objectid import ObjectId
 import pickle
 
 @dataclass(frozen=True)
-class MlModel():
+class MlModel(DbDocument):
     config: TrainingConfig
     label_performance_metrics: List[PerformanceMetrics]
     column_order: List[str] # order of features e.g x_Accelerometer__min
     label_encoder_object_file_ID: ObjectId 
     pipeline_object_file_ID: ObjectId
     _id: Optional[ObjectId] = None
-    prediction_IDs: List[PredictionID] = field(default_factory=list)
+
+    def dict_for_db_insertion(self) -> Dict:
+        self_dict = asdict(self)
+        del self_dict["id"]
+        return self_dict
 
     @staticmethod
     def serialize_label_encoder(label_encoder: LabelEncoder) -> bytes:

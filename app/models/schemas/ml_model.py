@@ -1,7 +1,7 @@
+from app.models.schemas.training_config import TrainingConfigInResponse
 from typing import Dict, List
 from pydantic import BaseModel
 from app.models.schemas.mongo_model import OID
-from app.ml.objects.classification import Classifier
 
 class SingleMetric(BaseModel):
     name: str
@@ -12,9 +12,7 @@ class PerformanceMetrics(BaseModel):
     metrics: List[SingleMetric]
 
 class MlModelInResponse(BaseModel):
-    # TODO IMPORTANT TRAINING CONFIG HERE
-    classifier: Classifier
-    hyperparameters: List[Dict]
+    config: TrainingConfigInResponse
     labelPerformanceMetrics: List[PerformanceMetrics]
 
 class MlModelMetadataInResponse(BaseModel):

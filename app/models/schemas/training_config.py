@@ -5,7 +5,7 @@ from app.ml.objects.normalization import Normalization
 from app.ml.objects.imputation import Imputation
 from app.ml.objects.feature import Feature
 
-class PerComponentConfig(BaseModel):
+class PerComponentConfigInTrain(BaseModel):
     sensor: str
     component: str
     features: List[Feature]
@@ -16,6 +16,18 @@ class TrainingConfigInTrain(BaseModel):
     modelName: str
     windowSize: int
     slidingStep: int
-    perComponentConfigs: List[PerComponentConfig]
+    perComponentConfigs: List[PerComponentConfigInTrain]
     classifier: Classifier
     hyperparameters: Dict[str, Any]
+
+class HyperparameterInResponse(BaseModel):
+    name: str
+    value: Any
+
+class TrainingConfigInResponse(BaseModel):
+    modelName: str
+    windowSize: int
+    slidingStep: int
+    perComponentConfigs: List[PerComponentConfigInTrain]
+    classifier: Classifier
+    hyperparameters: List[HyperparameterInResponse]

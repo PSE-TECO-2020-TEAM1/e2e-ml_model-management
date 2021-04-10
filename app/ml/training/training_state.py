@@ -1,7 +1,6 @@
 from enum import Enum
 
 class TrainingState(str, Enum):
-    # TODO CAPITALIZE ?
     NO_ACTIVE_TRAINING = "NO_ACTIVE_TRAINING",
     FEATURE_EXTRACTION = "FEATURE_EXTRACTION",
     MODEL_FITTING = "MODEL_FITTING",
