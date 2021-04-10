@@ -5,7 +5,7 @@ from app.workspace_management_api.stub_source_delete import WorkspaceDataSource
 from app.ml.training.trainer import Trainer
 from bson.objectid import ObjectId
 from app.ml.training.data_set_manager import DataSetManager
-from app.models.domain.sensor import Sensor
+from app.models.domain.sensor import Sensor, make_sensor_component
 from typing import Dict
 from app.ml.objects.classification.classifier_config_spaces.util import validate_hyperparameters
 from app.models.schemas.training_config import TrainingConfigInTrain
@@ -26,13 +26,12 @@ def validate_config(training_config: TrainingConfigInTrain, workspace_sensors: D
     if training_config.slidingStep > training_config.windowSize:
         raise ValueError("Sliding step cannot excess the window size")
 
-    # TODO IMPORTANT validate that feature extraction and pipeline configs are consistent (component names, number of components for each ?)
     for per_component_config in training_config.perComponentConfigs:
         sensor_name = per_component_config.sensor
-        component_name = per_component_config.component
+        component = make_sensor_component(sensor_name, per_component_config.component)
         if sensor_name not in workspace_sensors:
             raise ValueError(sensor_name + " is not a sensor of this workspace")
-        if component_name not in workspace_sensors[sensor_name].components:
-            raise ValueError(component_name + " not a valid component of " + sensor_name)
+        if component not in workspace_sensors[sensor_name].components:
+            raise ValueError(component + " not a valid component of " + sensor_name)
 
     validate_hyperparameters(training_config.classifier, training_config.hyperparameters)

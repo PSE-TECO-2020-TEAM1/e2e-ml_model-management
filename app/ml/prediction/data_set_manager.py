@@ -12,8 +12,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
 class DataSetManager():
-    def __init__(self, workspace_id: ObjectId):
+    def __init__(self, workspace_id: ObjectId, ml_model_id: ObjectId):
         self.workspace_id = workspace_id
+        self.ml_model_id = ml_model_id
         self.ml_model: MlModel = None
 
     def set_db(self, db: Database):
@@ -24,7 +25,7 @@ class DataSetManager():
     def get_ml_model(self) -> MlModel:
         # Cache the model here
         if not self.ml_model:
-            self.ml_model = self.ml_model_repository.get_ml_model(self.workspace_id)
+            self.ml_model = self.ml_model_repository.get_ml_model(self.ml_model_id)
         return self.ml_model
 
     def get_workspace_sensors(self) -> Dict[str, Sensor]:
@@ -44,8 +45,8 @@ class DataSetManager():
 
     def get_label_encoder(self) -> LabelEncoder:
         ml_model = self.get_ml_model()
-        return self.file_repository.get_file(MlModel.deserialize_label_encoder(ml_model.label_encoder_object_file_ID))
+        return MlModel.deserialize_label_encoder(self.file_repository.get_file(ml_model.label_encoder_object_file_ID))
 
     def get_pipeline(self) -> Pipeline:
         ml_model = self.get_ml_model()
-        return self.file_repository.get_file(MlModel.deserialize_pipeline(ml_model.pipeline_object_file_ID))
+        return MlModel.deserialize_pipeline(self.file_repository.get_file(ml_model.pipeline_object_file_ID))

@@ -11,5 +11,5 @@ class DbDoc():
         self_dict = asdict(self)
         # If no ID is given during the object creation, the intent is an ID assignment by MongoDB so remove the None field
         if not self._id:
-            del self_dict["id"]
+            del self_dict["_id"]
         return self_dict

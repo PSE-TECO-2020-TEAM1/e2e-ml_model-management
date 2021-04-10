@@ -1,20 +1,19 @@
 from app.models.schemas.training_config import TrainingConfigInResponse
-from typing import Dict, List
-from pydantic import BaseModel
-from app.models.schemas.mongo_model import OID
+from typing import List
+from app.models.schemas.mongo_model import MongoModel, OID
 
-class SingleMetric(BaseModel):
+class SingleMetricInResponse(MongoModel):
     name: str
     score: float
 
-class PerformanceMetrics(BaseModel):
+class PerformanceMetricsInResponse(MongoModel):
     label: str
-    metrics: List[SingleMetric]
+    metrics: List[SingleMetricInResponse]
 
-class MlModelInResponse(BaseModel):
+class MlModelInResponse(MongoModel):
     config: TrainingConfigInResponse
-    labelPerformanceMetrics: List[PerformanceMetrics]
+    labelPerformanceMetrics: List[PerformanceMetricsInResponse]
 
-class MlModelMetadataInResponse(BaseModel):
+class MlModelMetadataInResponse(MongoModel):
     id: OID
     name: str

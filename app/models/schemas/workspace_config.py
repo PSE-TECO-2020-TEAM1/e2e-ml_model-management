@@ -1,8 +1,7 @@
 from typing import List
 from app.models.schemas.sensor import SensorInWorkspace
-from pydantic import BaseModel
-from app.models.schemas.mongo_model import OID
+from app.models.schemas.mongo_model import MongoModel, OID
 
-class WorkspaceConfig(BaseModel):
+class WorkspaceConfig(MongoModel):
     workspaceId: OID
     sensors: List[SensorInWorkspace]

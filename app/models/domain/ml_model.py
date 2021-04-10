@@ -16,11 +16,6 @@ class MlModel(DbDoc):
     label_encoder_object_file_ID: ObjectId 
     pipeline_object_file_ID: ObjectId
 
-    def dict_for_db_insertion(self) -> Dict:
-        self_dict = asdict(self)
-        del self_dict["id"]
-        return self_dict
-
     @staticmethod
     def serialize_label_encoder(label_encoder: LabelEncoder) -> bytes:
         return pickle.dumps(label_encoder)

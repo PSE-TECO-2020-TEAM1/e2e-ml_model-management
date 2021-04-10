@@ -17,6 +17,8 @@ config_spaces = {
 }
 
 def validate_hyperparameters(classifier: Classifier, hyperparameters: Dict[str, Any]):
+    if classifier not in config_spaces:
+        raise ValueError("Invalid classifier name")
     # Raises an error iff not valid
     Configuration(config_spaces[classifier], values=hyperparameters)
 

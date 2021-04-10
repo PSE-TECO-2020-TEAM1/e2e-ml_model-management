@@ -4,10 +4,10 @@ from typing import List
 from app.models.schemas.prediction_data import PredictionData
 from app.fastapi.services import add_workspace, get_ml_model, get_workspace
 from app.models.domain.prediction_key import PredictionKey
-from app.models.schemas.sensor import SensorInWorkspace
+from app.models.schemas.sensor import SensorInPredictionConfig, SensorInWorkspace
 from app.models.schemas.workspace_config import WorkspaceConfig
 from fastapi.param_functions import Depends
-from app.fastapi.dependencies import extract_user_id, get_prediction_key_by_id_from_path
+from app.fastapi.dependencies import extract_user_id, get_prediction_key_by_id_from_query
 from app.models.schemas.mongo_model import OID
 from fastapi import APIRouter, status
 from app.models.schemas.parameters import ClassifierSelection, ParametersInResponse
@@ -47,16 +47,15 @@ async def get_parameters():
 
 
 @router.get("/predictionConfig", response_model=PredictionConfig, status_code=status.HTTP_200_OK)
-async def get_prediction_config(prediction_key: PredictionKey = Depends(get_prediction_key_by_id_from_path)):
+async def get_prediction_config(prediction_key: PredictionKey = Depends(get_prediction_key_by_id_from_query)):
     workspace = await get_workspace(prediction_key.workspace_id)
-    parsed_sensors = [SensorInWorkspace(name=name, samplingRate=sensor.sampling_rate) for name, sensor in workspace.sensors.items()]
+    parsed_sensors = [SensorInPredictionConfig(name=name, samplingRate=sensor.sampling_rate) for name, sensor in workspace.sensors.items()]
     return PredictionConfig(sensors=parsed_sensors)
 
 
 @router.get("/startPrediction", status_code=status.HTTP_200_OK)
-async def get_start_prediction(prediction_key: PredictionKey = Depends(get_prediction_key_by_id_from_path)):
-    model = await get_ml_model(prediction_key.model_id)
-    prediction_manager.spawn_predictor(prediction_id=prediction_key._id, model_id=model._id)
+async def get_start_prediction(prediction_key: PredictionKey = Depends(get_prediction_key_by_id_from_query)):
+    prediction_manager.spawn_predictor(prediction_key.workspace_id, prediction_key._id, prediction_key.model_id)
     return  # TODO how to return empty and not null?
 
 
@@ -67,5 +66,5 @@ async def post_submit_data(prediction_data: PredictionData):
 
 
 @router.get("/predictionResults", response_model=List[str], status_code=status.HTTP_200_OK)
-async def get_prediction_results(predictionId: str):
+async def get_prediction_results(predictionId: OID):
     return prediction_manager.get_prediction_results(predictionId)

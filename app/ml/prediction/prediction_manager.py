@@ -1,3 +1,5 @@
+from app.db.syncdb import create_sync_db
+from app.ml.prediction.data_set_manager import DataSetManager
 from app.models.schemas.prediction_data import PredictionData
 from app.ml.prediction.predictor import Predictor
 import asyncio
@@ -20,7 +22,7 @@ class PredictionUtil():
 
 class PredictionManager():
     def __init__(self):
-        self.prediction_id_to_util: Dict[str, PredictionUtil] = {}
+        self.prediction_id_to_util: Dict[ObjectId, PredictionUtil] = {}
 
     def initiate_clean_up_prediction_process(self):
         """
@@ -40,10 +42,10 @@ class PredictionManager():
                     del self.prediction_id_to_util[key]
             await asyncio.sleep(1 * 60)  # Check once per minute
 
-    def spawn_predictor(self, prediction_id: ObjectId, model_id: ObjectId):
+    def spawn_predictor(self, workspace_id: ObjectId, prediction_id: ObjectId, model_id: ObjectId):
         if prediction_id in self.prediction_id_to_util:
             return
-        predictor = Predictor(model_id)
+        predictor = Predictor(DataSetManager(workspace_id, model_id), create_db=create_sync_db)
         semaphore = Semaphore(0)
         (manager_end, predictor_end) = Pipe(duplex=True)
         process = Process(target=predictor.init_predictor_process, args=(semaphore, predictor_end))
@@ -58,12 +60,16 @@ class PredictionManager():
         self.prediction_id_to_util[prediction_id] = PredictionUtil(process=process, semaphore=semaphore, manager_end=manager_end)
 
     def submit_data(self, prediction_data: PredictionData):
+        if prediction_data.predictionId not in self.prediction_id_to_util:
+            raise ValueError("There is no prediction process in progress with the given id, start a prediction first")
         util = self.prediction_id_to_util[prediction_data.predictionId]
         util.last_access = datetime.utcnow()
         util.manager_end.send(prediction_data.sample)
         util.semaphore.release()
 
     def get_prediction_results(self, prediction_id: ObjectId) -> List[str]:
+        if prediction_id not in self.prediction_id_to_util:
+            raise ValueError("There is no prediction process in progress with the given id, start a prediction first")
         results: List[str] = []
         result_pipe = self.prediction_id_to_util[prediction_id].manager_end
         while result_pipe.poll():

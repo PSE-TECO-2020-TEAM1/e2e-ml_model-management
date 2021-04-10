@@ -36,5 +36,5 @@ async def get_ml_model_by_id_from_path(workspaceId: OID, modelId: OID) -> MlMode
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="The request model does not exist in the workspace")
     return await get_ml_model(modelId)
     
-async def get_prediction_key_by_id_from_path(predictionId: OID) -> PredictionKey:
+async def get_prediction_key_by_id_from_query(predictionId: OID) -> PredictionKey:
     return await get_prediction_key(predictionId)

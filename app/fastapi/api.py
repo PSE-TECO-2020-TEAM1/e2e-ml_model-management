@@ -5,4 +5,3 @@ router: APIRouter = APIRouter(prefix="/api")
 
 router.include_router(common_routes.router)
 router.include_router(workspace_routes.router)
-

@@ -1,3 +1,4 @@
+from enum import Enum
 from app.models.domain.sensor import SensorComponent
 from app.db.error.non_existent_error import NonExistentError
 from dataclasses import asdict
@@ -16,7 +17,7 @@ class MlModelRepository():
         ml_model = self.collection.find_one({"_id": ml_model_id})
         if ml_model is None:
             raise NonExistentError("Workspace with the given id does not exist")
-        return dacite.from_dict(data_class=MlModel, data=ml_model, config=dacite.Config(cast=[SensorComponent]))
+        return dacite.from_dict(data_class=MlModel, data=ml_model, config=dacite.Config(cast=[SensorComponent, Enum]))
 
     def add_ml_model(self, ml_model: MlModel) -> ObjectId:
         ml_model_dict = ml_model.dict_for_db_insertion()
