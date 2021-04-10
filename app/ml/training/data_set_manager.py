@@ -1,3 +1,4 @@
+from app.ml.training.training_state import TrainingState
 from app.db.syncdb.ml_model_repository import MlModelRepository
 from app.models.domain.ml_model import MlModel
 from app.ml.util.sample_parsing import parse_samples_from_workspace
@@ -103,7 +104,12 @@ class DataSetManager():
             file_IDs_dict[sensor_component] = {feature: file_ID}
         self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
 
+    def set_training_state(self, training_state: TrainingState):
+        self.is_valid_data_set_manager()
+        self.workspace_repository.set_training_state(self.workspace_id, training_state)
+
     def save_model(self, config, label_performance_metrics, column_order, label_encoder, pipeline):
+        self.is_valid_data_set_manager()
         label_encoder_object_file_ID = self.file_repository.put_file(MlModel.serialize_label_encoder(label_encoder))
         pipeline_object_file_ID = self.file_repository.put_file(MlModel.serialize_pipeline(pipeline))
         model_in_db = MlModel(None, config, label_performance_metrics, column_order, label_encoder_object_file_ID, pipeline_object_file_ID)

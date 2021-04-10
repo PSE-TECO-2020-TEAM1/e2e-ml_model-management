@@ -1,3 +1,4 @@
+from app.ml.training.training_state import TrainingState
 from app.ml.util.data_processing import calculate_classification_report, extract_features, split_to_data_windows
 from pandas.core.frame import DataFrame
 from app.ml.objects.feature.enum import Feature
@@ -28,31 +29,43 @@ class Trainer():
     def train(self):
         set_start_method("fork", force=True)
         self.setup()
-        # Get the data frame ready for pipeline
-        x, y = self.gather_features_and_labels()
-        # We have to sort the columns correctly when we are predicting later so we save the order
-        columns = x.columns.tolist()
-        # Encode labels
-        label_encoder = LabelEncoder()
-        y = label_encoder.fit_transform(y)
-        # Train-test-split
-        x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=42)
-        # Create the pipeline
-        pipeline = make_pipeline_from_config(self.training_config.get_component_pipeline_configs(),
-                                             self.training_config.classifier, self.training_config.hyperparameters)
-        # Fit the model
-        pipeline.fit(x_train, y_train)
-        # Calculate performance metrics
-        test_prediction_result = pipeline.predict(x_test)
-        performance_metrics = calculate_classification_report(test_prediction_result, y_test, label_encoder)
-        self.data_set_manager.save_model(
-            config=self.training_config,
-            label_performance_metrics=performance_metrics,
-            column_order=columns,
-            label_encoder=label_encoder,
-            pipeline=pipeline
-        )
-        exit(0)
+        try:
+            #------------------------------------FEATURE_EXTRACTION-----------------------------------#
+            self.data_set_manager.set_training_state(TrainingState.FEATURE_EXTRACTION)
+            # Get the data frame ready for pipeline
+            x, y = self.gather_features_and_labels()
+
+            #--------------------------------------MODEL_TRAINING-------------------------------------#
+            self.data_set_manager.set_training_state(TrainingState.MODEL_TRAINING)
+            # We have to sort the columns correctly when we are predicting later so we save the order
+            columns = x.columns.tolist()
+            # Encode labels
+            label_encoder = LabelEncoder()
+            y = label_encoder.fit_transform(y)
+            # Train-test-split
+            x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=42)
+            # Create the pipeline
+            pipeline = make_pipeline_from_config(self.training_config.get_component_pipeline_configs(),
+                                                 self.training_config.classifier, self.training_config.hyperparameters)
+            # Fit the model
+            pipeline.fit(x_train, y_train)
+
+            #------------------------------------CLASSIFICATION_REPORT--------------------------------#
+            self.data_set_manager.set_training_state(TrainingState.CLASSIFICATION_REPORT)
+            # Calculate performance metrics
+            test_prediction_result = pipeline.predict(x_test)
+            performance_metrics = calculate_classification_report(test_prediction_result, y_test, label_encoder)
+            self.data_set_manager.save_model(
+                config=self.training_config,
+                label_performance_metrics=performance_metrics,
+                column_order=columns,
+                label_encoder=label_encoder,
+                pipeline=pipeline
+            )
+        finally:
+            # We want to set the training state back to no active training no matter what
+            # so that an internal error does not block the whole workspace
+            self.data_set_manager.set_training_state(TrainingState.NO_ACTIVE_TRAINING)
 
     def gather_features_and_labels(self) -> Tuple[DataFrame, List[str]]:
         sliding_window = self.training_config.sliding_window

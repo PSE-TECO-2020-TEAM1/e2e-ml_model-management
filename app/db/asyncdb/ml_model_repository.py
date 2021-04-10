@@ -19,6 +19,9 @@ class MlModelRepository():
             raise NonExistentError("ML Model with the given id does not exist")
         return dacite.from_dict(data_class=MlModel, data=ml_model, config=dacite.Config(cast=[SensorComponent, Enum]))
 
+    async def delete_ml_model(self, ml_model_id: ObjectId):
+        await self.ml_model_collection.delete_one({"_id": ml_model_id})
+
     async def get_prediction_key(self, prediction_key_id: ObjectId) -> PredictionKey:
         prediction_key = await self.prediction_key_collection.find_one({"_id": prediction_key_id})
         if not prediction_key:

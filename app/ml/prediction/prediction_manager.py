@@ -1,3 +1,4 @@
+from app.core.config import PREDICTION_PROCESS_SCAN_INTERVAL_IN_SECONDS, PREDICTION_PROCESS_TIMEOUT_IN_SECONDS
 from app.db.syncdb import create_sync_db
 from app.ml.prediction.data_set_manager import DataSetManager
 from app.models.schemas.prediction_data import PredictionData
@@ -32,15 +33,14 @@ class PredictionManager():
         asyncio.create_task(self.clean_up_prediction_process())
 
     async def clean_up_prediction_process(self):
-        # TODO IMPORTANT at least manually test that this works
         while True:
             now = datetime.utcnow()
             for key, value in list(self.prediction_id_to_util.items()):
-                if (now - value.last_access).seconds > 5 * 60:  # Remove if inactive for more than 5 minutes
+                if (now - value.last_access).seconds > PREDICTION_PROCESS_TIMEOUT_IN_SECONDS:
                     print("Cleaning up a prediction process...")
                     value.process.terminate()
                     del self.prediction_id_to_util[key]
-            await asyncio.sleep(1 * 60)  # Check once per minute
+            await asyncio.sleep(PREDICTION_PROCESS_SCAN_INTERVAL_IN_SECONDS)
 
     def spawn_predictor(self, workspace_id: ObjectId, prediction_id: ObjectId, model_id: ObjectId):
         if prediction_id in self.prediction_id_to_util:
@@ -49,7 +49,6 @@ class PredictionManager():
         semaphore = Semaphore(0)
         (manager_end, predictor_end) = Pipe(duplex=True)
         process = Process(target=predictor.init_predictor_process, args=(semaphore, predictor_end))
-        # TODO IMPORTANT close processes on app shutdown (main.py)
         process.start()
         # Sanity check, not sure if necessary
         if not process.is_alive():
@@ -75,5 +74,10 @@ class PredictionManager():
         while result_pipe.poll():
             results += result_pipe.recv()
         return results
+
+    def terminate_prediction_processes(self):
+        for key, value in list(self.prediction_id_to_util.items()):
+            value.process.terminate()
+            del self.prediction_id_to_util[key]
 
 prediction_manager = PredictionManager()

@@ -1,3 +1,4 @@
+from app.ml.training.training_state import TrainingState
 from enum import Enum
 from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
@@ -28,6 +29,9 @@ class WorkspaceRepository():
         result = self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})
         if not result:
             raise NonExistentError("Could not set " + field)
+
+    def set_training_state(self, workspace_id: ObjectId, training_state: TrainingState):
+        self.set_workspace_field(workspace_id, "training_state", training_state)
 
     def get_training_data_set(self, workspace_id: ObjectId) -> TrainingDataSet:
         workspace = self.get_workspace(workspace_id)

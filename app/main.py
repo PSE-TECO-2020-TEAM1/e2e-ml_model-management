@@ -34,8 +34,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    # TODO CLEAN UP PROCESSES IN PREDICTION MANAGER (ADD A METHOD TO PREDICTION MANAGER FOR THE CLEANUP)
-    pass
+    prediction_manager.terminate_prediction_processes()
 
 if __name__ == "__main__":
     # Processes are not forked on creation

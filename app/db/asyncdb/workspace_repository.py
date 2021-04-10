@@ -1,3 +1,4 @@
+from app.ml.training.training_state import TrainingState
 from enum import Enum
 from typing import Any
 from app.models.domain.sensor import SensorComponent
@@ -33,3 +34,6 @@ class WorkspaceRepository():
         result = await self.collection.update_one({"_id": workspace_id}, {"$set": {field: value}})
         if not result:
             raise NonExistentError("Could not set " + field)
+
+    async def set_training_state(self, workspace_id: ObjectId, training_state: TrainingState):
+        await self.set_workspace_field(workspace_id, "training_state", training_state)
