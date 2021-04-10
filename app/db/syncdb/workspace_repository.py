@@ -1,4 +1,5 @@
 from enum import Enum
+
 from app.ml.objects.feature.enum import Feature
 from app.models.domain.sensor import SensorComponent
 from dataclasses import asdict

@@ -1,28 +1,28 @@
-from tests.stubs.models.domain.sample import interpolated_sample_stub_1, interpolated_sample_stub_2
+from tests.stubs.models.domain.sample import get_interpolated_sample_stub_1, get_interpolated_sample_stub_2
+from tests.stubs.models.domain.feature_extraction_data import (get_feature_extraction_data_stub_5_1, get_data_windows_df_5_1, get_labels_of_data_windows_5_1,
+                                                               get_sensor_component_feature_dfs_5_1, get_feature_extraction_data_stub_4_2, get_data_windows_df_4_2, get_labels_of_data_windows_4_2, get_sensor_component_feature_dfs_4_2)
+from tests.stubs.models.domain.training_data_set import get_training_data_set_stub
+
+from app.db.error.non_existent_error import NonExistentError
 
 from typing import Dict
 from bson.objectid import ObjectId
 import random_object_id
 import pickle
 
-class FileRepositoryStub():
-    def __init__(self, db):
-        self.files: Dict[ObjectId, bytes] = {}
-        self.__insert_stubs__()
 
-    def __insert_stubs__(self):
-        sample_list = [interpolated_sample_stub_1, interpolated_sample_stub_2]
-        self.files[ObjectId("607070acc7559b9ccb3335fc")] = pickle.dumps(sample_list)
+class FileRepositoryStub():
+    def __init__(self, init: Dict[ObjectId, bytes]):
+        self.files = init
 
     def get_file(self, id: ObjectId) -> bytes:
         if id not in self.files:
-            # TODO raise error
-            pass
-        
+            raise NonExistentError("The request file with the id " + str(id) + " does not exist")
+
         return self.files[id]
 
     def put_file(self, file: bytes) -> ObjectId:
-        id: ObjectId(random_object_id.generate())
+        id = ObjectId(random_object_id.generate())
         self.files[id] = file
         return id
 

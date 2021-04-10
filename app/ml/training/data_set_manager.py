@@ -73,9 +73,12 @@ class DataSetManager():
     def add_split_to_windows(self, sliding_window: SlidingWindow, data_windows: DataFrame, labels_of_data_windows: List[str]):
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        data_windows_df_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_data_windows_df(data_windows))
-        labels_of_data_windows_file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_labels_of_data_windows(labels_of_data_windows))
-        res = FeatureExtractionData(data_windows_df_file_ID=data_windows_df_file_ID, labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
+        data_windows_df_file_ID = self.file_repository.put_file(
+            FeatureExtractionData.serialize_data_windows_df(data_windows))
+        labels_of_data_windows_file_ID = self.file_repository.put_file(
+            FeatureExtractionData.serialize_labels_of_data_windows(labels_of_data_windows))
+        res = FeatureExtractionData(data_windows_df_file_ID=data_windows_df_file_ID,
+                                    labels_of_data_windows_file_ID=labels_of_data_windows_file_ID)
         training_data_set.feature_extraction_cache[str(sliding_window)] = res
         self.workspace_repository.set_training_data_set(self.workspace_id, training_data_set)
 
@@ -89,13 +92,15 @@ class DataSetManager():
     def get_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> DataFrame:
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
+        file_ID = training_data_set.feature_extraction_cache[str(
+            sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
         return FeatureExtractionData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
 
     def add_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature, feature_df: DataFrame):
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
-        file_IDs_dict = training_data_set.feature_extraction_cache[str(sliding_window)].sensor_component_feature_df_file_IDs
+        file_IDs_dict = training_data_set.feature_extraction_cache[str(
+            sliding_window)].sensor_component_feature_df_file_IDs
         file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_sensor_component_feature_df(feature_df))
         if sensor_component in file_IDs_dict.keys():
             file_IDs_dict[sensor_component][feature] = file_ID
@@ -106,6 +111,7 @@ class DataSetManager():
     def save_model(self, config, label_performance_metrics, column_order, label_encoder, pipeline):
         label_encoder_object_file_ID = self.file_repository.put_file(MlModel.serialize_label_encoder(label_encoder))
         pipeline_object_file_ID = self.file_repository.put_file(MlModel.serialize_pipeline(pipeline))
-        model_in_db = MlModel(None, config, label_performance_metrics, column_order, label_encoder_object_file_ID, pipeline_object_file_ID)
+        model_in_db = MlModel(None, config, label_performance_metrics, column_order,
+                              label_encoder_object_file_ID, pipeline_object_file_ID)
         model_id = self.ml_model_repository.add_ml_model(model_in_db)
         self.workspace_repository.add_ml_model_ref(self.workspace_id, model_id)
