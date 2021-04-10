@@ -1,20 +1,26 @@
-from app.db.error.non_existent_error import NonExistentError
-from app.models.domain.feature_extraction_data import FeatureExtractionData
-from app.models.domain.training_data_set import TrainingDataSet
-from tests.stubs.models.domain.feature_extraction_data import get_data_windows_df_4_2, get_data_windows_df_5_1, get_feature_extraction_data_stub_4_2, get_feature_extraction_data_stub_5_1, get_labels_of_data_windows_4_2, get_labels_of_data_windows_5_1, get_sensor_component_feature_dfs_4_2, get_sensor_component_feature_dfs_5_1
-from app.models.domain.workspace import Workspace
-from tests.stubs.db.syncdb.file_repository import FileRepositoryStub
-from tests.stubs.db.syncdb.workspace_repository import WorkspaceRepositoryStub
-from tests.stubs.db.syncdb.ml_model_repository import MlModelRepositoryStub
-from tests.stubs.workspace_management_api.data_source import DataSourceStub
-from tests.stubs.models.domain.workspace import get_workspace_stub
-from tests.stubs.models.domain.sample import get_interpolated_sample_stub_1, get_interpolated_sample_stub_2
-
-from app.ml.training.data_set_manager import DataSetManager
-
 import pickle
-import pytest
 from unittest import mock
+import pytest
+
+from app.db.error.non_existent_error import NonExistentError
+from app.ml.objects.feature.enum import Feature
+from app.ml.training.data_set_manager import DataSetManager
+from app.models.domain.feature_extraction_data import FeatureExtractionData
+from app.models.domain.sliding_window import SlidingWindow
+from app.models.domain.training_data_set import TrainingDataSet
+from app.models.domain.workspace import Workspace
+
+from tests.stubs.db.syncdb.file_repository import FileRepositoryStub
+from tests.stubs.db.syncdb.ml_model_repository import MlModelRepositoryStub
+from tests.stubs.db.syncdb.workspace_repository import WorkspaceRepositoryStub
+from tests.stubs.models.domain.feature_extraction_data import (
+    get_data_windows_df_4_2, get_data_windows_df_5_1,
+    get_labels_of_data_windows_4_2, get_labels_of_data_windows_5_1,
+    get_sensor_component_feature_dfs_4_2, get_sensor_component_feature_dfs_5_1)
+from tests.stubs.models.domain.sample import (get_interpolated_sample_stub_1,
+                                              get_interpolated_sample_stub_2)
+from tests.stubs.models.domain.workspace import get_workspace_stub
+from tests.stubs.workspace_management_api.data_source import DataSourceStub
 
 interpolated_sample_stubs = [get_interpolated_sample_stub_1(), get_interpolated_sample_stub_2()]
 
@@ -32,6 +38,7 @@ def interpolated_sample_stub_1():
 @pytest.fixture
 def interpolated_sample_stub_2():
     return get_interpolated_sample_stub_2()
+
 
 @pytest.fixture
 def interpolated_sample_stubs_fixture(interpolated_sample_stub_1, interpolated_sample_stub_2):
@@ -89,21 +96,21 @@ def file_repository_stub(workspace_stub, interpolated_sample_stub_1, interpolate
     for sensor_component in feature_extraction_data_stub_5_1.sensor_component_feature_df_file_IDs:
         for feature in feature_extraction_data_stub_5_1.sensor_component_feature_df_file_IDs[sensor_component]:
             init[feature_extraction_data_stub_5_1.sensor_component_feature_df_file_IDs[sensor_component]
-                 [feature]] = sensor_component_feature_dfs_5_1[sensor_component][feature]
+                 [feature]] = pickle.dumps(sensor_component_feature_dfs_5_1[sensor_component][feature])
 
     init[feature_extraction_data_stub_4_2.data_windows_df_file_ID] = pickle.dumps(data_windows_df_4_2)
     init[feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID] = pickle.dumps(labels_of_data_windows_4_2)
     for sensor_component in feature_extraction_data_stub_4_2.sensor_component_feature_df_file_IDs:
         for feature in feature_extraction_data_stub_4_2.sensor_component_feature_df_file_IDs[sensor_component]:
             init[feature_extraction_data_stub_4_2.sensor_component_feature_df_file_IDs[sensor_component]
-                 [feature]] = sensor_component_feature_dfs_4_2[sensor_component][feature]
+                 [feature]] = pickle.dumps(sensor_component_feature_dfs_4_2[sensor_component][feature])
 
     return FileRepositoryStub(init=init)
 
 
 @pytest.fixture
 def ml_model_repository_stub():
-    init = {} # TODO
+    init = {}  # TODO
     return MlModelRepositoryStub(init=init)
 
 
@@ -151,7 +158,119 @@ def test_get_sample_list(data_set_manager, interpolated_sample_stubs_fixture):
         assert sample_list[i].label == interpolated_sample_stubs_fixture[i].label
         assert sample_list[i].data_frame.equals(interpolated_sample_stubs_fixture[i].data_frame)
 
+
 def test_get_sample_list_with_no_sample_list(data_set_manager, workspace_stub):
     workspace_stub.training_data_set.sample_list_file_ID = None
     with pytest.raises(NonExistentError):
         data_set_manager.get_sample_list()
+
+
+def test_is_cached_split_to_windows(data_set_manager):
+    assert data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=5, sliding_step=1))
+    assert data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=4, sliding_step=2))
+    assert not data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=5, sliding_step=2))
+
+
+def test_get_labels_of_data_windows(data_set_manager, labels_of_data_windows_4_2, labels_of_data_windows_5_1):
+    assert data_set_manager.get_labels_of_data_windows(SlidingWindow(
+        window_size=4, sliding_step=2)) == labels_of_data_windows_4_2
+    assert data_set_manager.get_labels_of_data_windows(SlidingWindow(
+        window_size=5, sliding_step=1)) == labels_of_data_windows_5_1
+    with pytest.raises(KeyError):
+        data_set_manager.get_labels_of_data_windows(SlidingWindow(window_size=4, sliding_step=1))
+
+
+def test_get_cached_split_to_windows(data_set_manager, data_windows_df_4_2, data_windows_df_5_1):
+    assert data_set_manager.get_cached_split_to_windows(SlidingWindow(
+        window_size=4, sliding_step=2)).equals(data_windows_df_4_2)
+    assert data_set_manager.get_cached_split_to_windows(SlidingWindow(
+        window_size=5, sliding_step=1)).equals(data_windows_df_5_1)
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_split_to_windows(SlidingWindow(window_size=8, sliding_step=6))
+
+
+def test_add_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, data_windows_df_5_1, labels_of_data_windows_5_1):
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
+    file_repository_stub.delete_file(feature_extraction_data_stub_4_2.data_windows_df_file_ID)
+    file_repository_stub.delete_file(feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)
+
+    data_set_manager.add_split_to_windows(SlidingWindow(window_size=4, sliding_step=2),
+                                          data_windows_df_4_2, labels_of_data_windows_4_2)
+
+    assert "4_2" in workspace_stub.training_data_set.feature_extraction_cache
+
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_4_2.data_windows_df_file_ID)).equals(data_windows_df_4_2)
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)) == labels_of_data_windows_4_2
+
+    assert "5_1" in workspace_stub.training_data_set.feature_extraction_cache
+
+    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache["5_1"]
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_5_1.data_windows_df_file_ID)).equals(data_windows_df_5_1)
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_5_1.labels_of_data_windows_file_ID)) == labels_of_data_windows_5_1
+
+
+def test_add_split_to_windows_with_already_existing_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, data_windows_df_5_1, labels_of_data_windows_5_1):
+    data_set_manager.add_split_to_windows(SlidingWindow(window_size=4, sliding_step=2),
+                                          data_windows_df_4_2, labels_of_data_windows_4_2)
+
+    assert "4_2" in workspace_stub.training_data_set.feature_extraction_cache
+
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_4_2.data_windows_df_file_ID)).equals(data_windows_df_4_2)
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)) == labels_of_data_windows_4_2
+
+    assert "5_1" in workspace_stub.training_data_set.feature_extraction_cache
+
+    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache["5_1"]
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_5_1.data_windows_df_file_ID)).equals(data_windows_df_5_1)
+    assert pickle.loads(file_repository_stub.get_file(
+        feature_extraction_data_stub_5_1.labels_of_data_windows_file_ID)) == labels_of_data_windows_5_1
+
+
+def test_is_cached_sensor_component_feature(data_set_manager):
+    assert data_set_manager.is_cached_sensor_component_feature(SlidingWindow(
+        window_size=5, sliding_step=1), "x_Accelerometer", Feature.MINIMUM)
+    assert data_set_manager.is_cached_sensor_component_feature(SlidingWindow(
+        window_size=5, sliding_step=1), "y_Accelerometer", Feature.MAXIMUM)
+    assert data_set_manager.is_cached_sensor_component_feature(
+        SlidingWindow(window_size=4, sliding_step=2), "z_Accelerometer", Feature.MEAN)
+    assert data_set_manager.is_cached_sensor_component_feature(
+        SlidingWindow(window_size=4, sliding_step=2), "z_Gyroscope", Feature.MEDIAN)
+
+    assert not data_set_manager.is_cached_sensor_component_feature(
+        SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
+    assert not data_set_manager.is_cached_sensor_component_feature(
+        SlidingWindow(window_size=5, sliding_step=1), "a_Accelerometer", Feature.MINIMUM)
+    assert not data_set_manager.is_cached_sensor_component_feature(
+        SlidingWindow(window_size=5, sliding_step=1), "x_Accelerometer", Feature.MEAN)
+
+def test_get_cached_sensor_component_feature(data_set_manager, sensor_component_feature_dfs_5_1, sensor_component_feature_dfs_4_2):
+    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=1), "x_Accelerometer", Feature.MINIMUM).equals(sensor_component_feature_dfs_5_1["x_Accelerometer"][Feature.MINIMUM])
+    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=1), "y_Accelerometer", Feature.MAXIMUM).equals(sensor_component_feature_dfs_5_1["y_Accelerometer"][Feature.MAXIMUM])
+    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=4, sliding_step=2), "z_Accelerometer", Feature.MEAN).equals(sensor_component_feature_dfs_4_2["z_Accelerometer"][Feature.MEAN])
+    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=4, sliding_step=2), "z_Gyroscope", Feature.MEDIAN).equals(sensor_component_feature_dfs_4_2["x_Gyroscope"][Feature.MEDIAN])
+
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
+    
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
+    
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
+
+def test_add_sensor_component_feature(data_set_manager):
+    # TODO
+    pass
+
+def test_save_mode(data_set_manager):
+    # TODO
+    pass

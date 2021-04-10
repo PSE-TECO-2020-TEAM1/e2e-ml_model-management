@@ -8,7 +8,6 @@ from app.db.error.non_existent_error import NonExistentError
 from typing import Dict
 from bson.objectid import ObjectId
 import random_object_id
-import pickle
 
 
 class FileRepositoryStub():
