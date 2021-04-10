@@ -11,6 +11,5 @@ workspace_stub = Workspace(
                 "Gyroscope": Sensor(sampling_rate=50, components=["x", "y", "z"])},
     training_data_set=training_data_set_stub,
     training_state=TrainingState.NO_ACTIVE_TRAINING,
-    prediction_IDs=[], # TODO
     trained_ml_model_refs=[]
 )

@@ -12,7 +12,7 @@ class WorkspaceRepositoryStub():
         self.__insert_stubs__()
 
     def __insert_stubs__(self):
-        self.workspaces[ObjectId("60706e79e8584d11339c91f3")] = workspace_stub
+        self.workspaces[workspace_stub._id] = workspace_stub
 
     def get_workspace(self, workspace_id: ObjectId) -> Workspace:
         self.__assert_contains_workspace_id__(workspace_id)

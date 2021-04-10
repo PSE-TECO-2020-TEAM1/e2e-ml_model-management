@@ -1,11 +1,9 @@
-from app.models.domain.ml_model import MlModel
 from bson.objectid import ObjectId
 from app.models.domain.training_data_set import TrainingDataSet
 from app.models.domain.sensor import Sensor
 from typing import Dict, List
 from dataclasses import dataclass, field
 
-from app.models.domain.prediction_id import PredictionID
 from app.models.domain.training_state import TrainingState
 
 @dataclass
