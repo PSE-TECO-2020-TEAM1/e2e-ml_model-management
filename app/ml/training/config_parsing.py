@@ -1,4 +1,3 @@
-from app.ml.objects import imputation, normalization
 from app.models.domain.sensor import make_sensor_component, reverse_sensor_component
 from app.models.domain.sliding_window import SlidingWindow
 from app.models.domain.training_config import PerComponentConfig, PipelineConfig, TrainingConfig
@@ -30,7 +29,7 @@ def parse_config_for_response(training_config: TrainingConfig) -> TrainingConfig
                                         component=reverse_sensor_component(component)[1],
                                         features=config.features,
                                         imputation=config.pipeline_config.imputation,
-                                        normalization=config.pipeline_config.normalization
+                                        normalizer=config.pipeline_config.normalization
                                     )
                                         for component, config in training_config.perComponentConfigs.items()],
                                     classifier=training_config.classifier,
