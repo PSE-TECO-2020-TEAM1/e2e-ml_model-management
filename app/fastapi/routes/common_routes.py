@@ -29,7 +29,7 @@ async def create_model_workspace(workspace_config: WorkspaceConfig, user_id: OID
                               components=[make_sensor_component(sensor.name, component) for component in sensor.dataFormat]
                           ) for sensor in workspace_config.sensors})
     await add_workspace(workspace)
-    return Response(status_code=status.HTTP_201_OK)
+    return Response(status_code=status.HTTP_201_CREATED)
 
 
 @router.get("/parameters", response_model=ParametersInResponse, status_code=status.HTTP_200_OK)

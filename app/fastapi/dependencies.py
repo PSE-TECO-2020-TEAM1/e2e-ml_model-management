@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from fastapi import Header
 from fastapi.param_functions import Depends
 import jwt
-from starlette import status
+from fastapi import status
 from app.core.config import AUTH_SECRET
 from bson.objectid import ObjectId
 from app.fastapi.services import get_workspace
