@@ -1,12 +1,11 @@
 from app.workspace_management_api.error import NoSampleInWorkspaceError, WorkspaceManagementConnectionError
 from typing import List
 from app.workspace_management_api.sample_model import SampleFromWorkspace
-from bson.objectid import ObjectId
 from app.workspace_management_api.data_source import ExternalDataSource
 from app.core.config import WORKSPACE_MANAGEMENT_IP_PORT
+from bson.objectid import ObjectId
 import requests
 import dacite
-
 
 class WorkspaceDataSource(ExternalDataSource):
 

@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 fastapi = "*"
-bson = "*"
 autopep8 = "*"
 tsfresh = "*"
 sklearn = "*"
@@ -16,7 +15,8 @@ configspace = "*"
 uvicorn = "*"
 dacite = "*"
 pandas = "*"
-pymongo = "*"
+setuptools = "*"
+pymongo = "==3.11.3"
 
 [dev-packages]
 mongomock = "*"
