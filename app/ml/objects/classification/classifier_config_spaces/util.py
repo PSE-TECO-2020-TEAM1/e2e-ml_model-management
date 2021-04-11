@@ -26,9 +26,9 @@ def validate_and_parse_hyperparameters(classifier: Classifier, hyperparameters: 
     # Raises an error if the values are invalid for the config space
     try:
         Configuration(config_spaces[classifier], values=hyperparameters)
-    except:
-        # TODO IMPORTANT BE MORE SPECIFIC HERE
-        raise ValueError("Invalid hyperparameters")
+    except Exception as e:
+        # TODO IMPORTANT BE MORE SPECIFIC HERE (PROBABLY DONT CATCH EXCEPTION, CHECK WHAT CONFIGURATION RAISES)
+        raise ValueError(str(e))
     # Parse strings to actual types ( strings are required by the ConfigSpace module ¯\_(ツ)_/¯ )
     for key, value in hyperparameters.items():
         if value == "None":

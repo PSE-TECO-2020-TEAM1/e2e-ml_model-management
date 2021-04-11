@@ -14,7 +14,6 @@ from typing import List
 from app.models.domain.training_data_set import TrainingDataSet
 from app.db.syncdb.workspace_repository import WorkspaceRepository
 from app.workspace_management_api.data_source import ExternalDataSource
-from app.ml.training.error.training_error import TrainingError
 from pymongo.database import Database
 
 
@@ -25,15 +24,16 @@ class DataSetManager():
 
     def is_valid_data_set_manager(self):
         if not self.db_is_set:
-            raise TrainingError("Database is not configured")
-        if not self.workspace_repository.contains_workspace_id(self.workspace_id):
-            raise TrainingError("There is no workspace with the id with which this data set manager was initialized")
+            raise RuntimeError("Database is not configured")
 
     def set_db(self, db: Database):
         self.db_is_set = True
         self.file_repository = FileRepository(db)
         self.workspace_repository = WorkspaceRepository(db)
         self.ml_model_repository = MlModelRepository(db)
+        # Check if the operations relate to an existing workspace
+        if not self.workspace_repository.contains_workspace_id(self.workspace_id):
+            raise RuntimeError("There is no workspace with the id with which this data set manager was initialized")
 
     def update_training_data_set(self):
         self.is_valid_data_set_manager()
@@ -65,7 +65,7 @@ class DataSetManager():
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         if str(sliding_window) not in training_data_set.feature_extraction_cache:
-            raise TrainingError("There is no cached split to windows with the given sliding window")
+            raise RuntimeError("There is no cached split to windows with the given sliding window")
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].labels_of_data_windows_file_ID
         return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
 
@@ -73,7 +73,7 @@ class DataSetManager():
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
         if str(sliding_window) not in training_data_set.feature_extraction_cache:
-            raise TrainingError("There is no cached split to windows with the given sliding window")
+            raise RuntimeError("There is no cached split to windows with the given sliding window")
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].data_windows_df_file_ID
         return FeatureExtractionData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
 
@@ -106,8 +106,7 @@ class DataSetManager():
         if str(sliding_window) not in training_data_set.feature_extraction_cache or sensor_component not in training_data_set.feature_extraction_cache[str(
             sliding_window)].sensor_component_feature_df_file_IDs or feature not in training_data_set.feature_extraction_cache[str(
                 sliding_window)].sensor_component_feature_df_file_IDs[sensor_component]:
-            raise TrainingError(
-                "There is no cached feature extraction data with the given sliding window, sensor component and feature")
+            raise RuntimeError("There is no cached feature extraction data with the given sliding window, sensor component and feature")
 
         file_ID = training_data_set.feature_extraction_cache[str(
             sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]

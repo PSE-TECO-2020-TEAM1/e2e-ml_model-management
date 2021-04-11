@@ -6,7 +6,6 @@ class DataPointInPredict(MongoModel):
     data: List[float]
     timestamp: int
 
-
 class DataPointsPerSensorInPredict(MongoModel):
     sensor: str
     dataPoints: List[DataPointInPredict]

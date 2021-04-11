@@ -1,3 +1,4 @@
+from starlette.responses import Response
 from app.models.domain.sensor import Sensor, make_sensor_component
 from app.models.domain.workspace import Workspace
 from typing import List
@@ -28,7 +29,7 @@ async def create_model_workspace(workspace_config: WorkspaceConfig, user_id: OID
                               components=[make_sensor_component(sensor.name, component) for component in sensor.dataFormat]
                           ) for sensor in workspace_config.sensors})
     await add_workspace(workspace)
-    return  # TODO how to return empty and not null?
+    return Response(status_code=status.HTTP_201_OK)
 
 
 @router.get("/parameters", response_model=ParametersInResponse, status_code=status.HTTP_200_OK)
@@ -56,13 +57,13 @@ async def get_prediction_config(prediction_key: PredictionKey = Depends(get_pred
 @router.get("/startPrediction", status_code=status.HTTP_200_OK)
 async def get_start_prediction(prediction_key: PredictionKey = Depends(get_prediction_key_by_id_from_query)):
     prediction_manager.spawn_predictor(prediction_key.workspace_id, prediction_key._id, prediction_key.model_id)
-    return  # TODO how to return empty and not null?
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post("/submitData", status_code=status.HTTP_200_OK)
 async def post_submit_data(prediction_data: PredictionData):
     prediction_manager.submit_data(prediction_data)
-    return  # TODO how to return empty and not null?
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/predictionResults", response_model=List[str], status_code=status.HTTP_200_OK)

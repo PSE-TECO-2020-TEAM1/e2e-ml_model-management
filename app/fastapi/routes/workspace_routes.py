@@ -1,3 +1,4 @@
+from app.models.schemas.training_state import TrainingStateInResponse
 from starlette.exceptions import HTTPException
 from app.models.schemas.prediction_config import PredictionIdInResponse
 from app.ml.training.training_state import TrainingState
@@ -23,18 +24,29 @@ router = APIRouter(
 
 @router.post("/{workspaceId}/train", status_code=status.HTTP_200_OK)
 async def post_train(training_config: TrainingConfigInTrain, workspace: Workspace = Depends(get_workspace_by_id_from_path)):
-    if workspace.training_state is not TrainingState.NO_ACTIVE_TRAINING:
+    if workspace.training_state.is_in_progress_training_state():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="There is already a training in progress, please try again once it is finished")
+                            detail="There is already a training in progress, please try again once it is finished.")
     validate_config(training_config, workspace.sensors)
     await set_training_state_to_initiated(workspace._id)
     initiate_new_training(workspace._id, training_config)
     return Response(status_code=status.HTTP_200_OK)
 
 
-@router.get("/{workspaceId}/trainingState", response_model=TrainingState, status_code=status.HTTP_200_OK)
+@router.get("/{workspaceId}/trainingState", response_model=TrainingStateInResponse, status_code=status.HTTP_200_OK)
 async def get_training_progress(workspace: Workspace = Depends(get_workspace_by_id_from_path)):
-    return workspace.training_state
+    # No Error
+    if not workspace.training_state.is_error_state():
+        return TrainingStateInResponse(state=workspace.training_state)
+    # Error
+    error: str
+    if workspace.training_state == TrainingState.WORKSPACE_MANAGEMENT_CONNECTION_ERROR:
+        error = "Connection to workspace management service could not be established."
+    elif workspace.training_state == TrainingState.NO_SAMPLE_ERROR:
+        error = "There are no samples in the workspace. Please record some samples first."
+    elif workspace.training_state == TrainingState.TRAINING_ERROR:
+        error = "An internal error occured. ¯\_(ツ)_/¯"
+    return TrainingStateInResponse(state=workspace.training_state, error=error)
 
 
 @router.get("/{workspaceId}/models", response_model=List[MlModelMetadataInResponse], status_code=status.HTTP_200_OK)
@@ -61,6 +73,7 @@ async def get_model(ml_model: MlModel = Depends(get_ml_model_by_id_from_path)):
 async def delete_model(ml_model: MlModel = Depends(get_ml_model_by_id_from_path)):
     # Get the model to validate that it exists under the workspace
     await delete_ml_model(ml_model._id)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/{workspaceId}/models/{modelId}/generatePredictionId", response_model=PredictionIdInResponse, status_code=status.HTTP_200_OK)

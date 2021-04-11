@@ -1,12 +1,24 @@
 from app.models.schemas.prediction_data import SampleInPredict
 from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
 from app.models.domain.sample import InterpolatedSample
-import bisect
 from typing import Dict, List
 from pandas.core.frame import DataFrame
 from app.models.domain.sensor import Sensor
+import bisect
 
-# TODO IMPORTANT ADD DATA VALIDATION IN RESPECTIVE METHODS
+
+def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]):
+    if sample.start > sample.end:
+        raise ValueError("Sample start can't be bigger than the sample end")
+    for sensor_data_points in sample.sensorDataPoints:
+        if sensor_data_points.sensor not in workspace_sensors:
+            raise ValueError("Unknown value for sensor: " + sensor_data_points.sensor)
+        workspace_sensor = workspace_sensors[sensor_data_points.sensor]
+        for data_point in sensor_data_points.dataPoints:
+            if len(data_point) != len(workspace_sensor.components):
+                raise ValueError("Data for sensor " + workspace_sensor + " has more than supported number of components.")
+            if (data_point.timestamp < sample.start) or (data_point.timestamp > sample.end):
+                raise ValueError("Data point has an invalid timestamp (outside of the sample timeframe)")
 
 
 def parse_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
@@ -18,6 +30,7 @@ def parse_sensor_data_points_in_predict(sample: SampleInPredict, workspace_senso
 
 
 def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
+    # We don't validate here since the data is from an internal service (which I hope does data validation)
     all_interpolated_samples = []
     for sample in samples:
         all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
