@@ -9,13 +9,13 @@ import jwt
 
 class ExternalDataSource(ABC):
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def last_modified(user_id: ObjectId, workspace_id: ObjectId) -> int:
         raise NotImplemented
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def fetch_samples(user_id: ObjectId, workspace_id: ObjectId) -> List[SampleFromWorkspace]:
         raise NotImplemented
 
