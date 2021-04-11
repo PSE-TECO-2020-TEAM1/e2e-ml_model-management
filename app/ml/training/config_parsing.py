@@ -12,8 +12,8 @@ def parse_config_for_training(training_config: TrainingConfigInTrain) -> Trainin
         perComponentConfigs={make_sensor_component(config.sensor, config.component): PerComponentConfig(
             features=config.features,
             pipeline_config=PipelineConfig(
-                imputation=config.imputation,
-                normalization=config.normalization
+                imputation=config.imputer,
+                normalization=config.normalizer
             )
         ) for config in training_config.perComponentConfigs},
         classifier=training_config.classifier,
