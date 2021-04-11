@@ -14,7 +14,7 @@ class DataPoint():
 
 @dataclass
 class DataPointsPerSensor():
-    sensor: str
+    sensorName: str
     dataPoints: List[DataPoint]
 
 @dataclass

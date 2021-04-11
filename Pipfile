@@ -5,19 +5,19 @@ name = "pypi"
 
 [packages]
 fastapi = "*"
-bson = "*"
-pymongo = "*"
 autopep8 = "*"
 tsfresh = "*"
 sklearn = "*"
 pyts = "*"
-mypy = "*"
 pyjwt = "*"
 motor = "*"
 configspace = "*"
 uvicorn = "*"
 dacite = "*"
 pandas = "*"
+setuptools = "*"
+pymongo = "==3.11.3"
+starlette = "==0.13.6"
 
 [dev-packages]
 mongomock = "*"

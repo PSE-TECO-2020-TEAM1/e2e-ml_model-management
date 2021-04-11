@@ -13,4 +13,4 @@ def get_workspace_stub():
                  "Gyroscope": Sensor(sampling_rate=50, components=["x", "y", "z"])},
         training_data_set=get_training_data_set_stub(),
         training_state=TrainingState.NO_ACTIVE_TRAINING,
-        trained_ml_model_refs=["60736013b961d239c76711a3", "607367362d98418cae5a1522"])
+        ml_model_refs=["60736013b961d239c76711a3", "607367362d98418cae5a1522"])

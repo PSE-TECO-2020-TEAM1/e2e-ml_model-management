@@ -25,6 +25,9 @@ async def get_ml_model(ml_model_id: ObjectId) -> MlModel:
 async def delete_ml_model(ml_model_id: ObjectId):
     await MlModelRepository(get_async_db()).delete_ml_model(ml_model_id)
 
+async def delete_ml_model_ref_from_workspace(workspace_id: ObjectId, ml_model_ref: ObjectId):
+    await WorkspaceRepository(get_async_db()).delete_ml_model_ref(workspace_id, ml_model_ref)
+
 async def get_prediction_key(prediction_id: ObjectId) -> PredictionKey:
     key = await MlModelRepository(get_async_db()).get_prediction_key(prediction_id)
     return key

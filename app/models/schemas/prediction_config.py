@@ -6,5 +6,4 @@ class PredictionIdInResponse(MongoModel):
     predictionId: OID
 
 class PredictionConfig(MongoModel):
-    # TODO need anything else ?
     sensors: List[SensorInPredictionConfig]

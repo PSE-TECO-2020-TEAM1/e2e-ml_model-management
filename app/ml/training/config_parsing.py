@@ -13,7 +13,7 @@ def parse_config_for_training(training_config: TrainingConfigInTrain) -> Trainin
             features=config.features,
             pipeline_config=PipelineConfig(
                 imputation=config.imputation,
-                normalization=config.normalization
+                normalization=config.normalizer
             )
         ) for config in training_config.perComponentConfigs},
         classifier=training_config.classifier,

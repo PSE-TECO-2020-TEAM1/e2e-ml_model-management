@@ -11,7 +11,7 @@ class PerComponentConfigInTrain(MongoModel):
     component: str
     features: List[Feature]
     imputation: Imputation
-    normalization: Normalization
+    normalizer: Normalization
 
 class TrainingConfigInTrain(MongoModel):
     modelName: str

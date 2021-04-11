@@ -32,4 +32,4 @@ class WorkspaceRepositoryStub():
 
     def add_ml_model_ref(self, workspace_id: ObjectId, ml_model_id: ObjectId):
         self.get_workspace(workspace_id)
-        self.workspaces[workspace_id].trained_ml_model_refs.append(ml_model_id)
+        self.workspaces[workspace_id].ml_model_refs.append(ml_model_id)

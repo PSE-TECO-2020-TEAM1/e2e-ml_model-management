@@ -37,3 +37,6 @@ class WorkspaceRepository():
 
     async def set_training_state(self, workspace_id: ObjectId, training_state: TrainingState):
         await self.set_workspace_field(workspace_id, "training_state", training_state)
+
+    async def delete_ml_model_ref(self, workspace_id: ObjectId, ml_model_ref: ObjectId):
+        await self.collection.update_one({"_id": workspace_id}, {"$pull": {"ml_model_refs": ml_model_ref}})

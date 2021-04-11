@@ -1,3 +1,4 @@
+from app.workspace_management_api.error import NoSampleInWorkspaceError, WorkspaceManagementConnectionError
 from app.ml.training.training_state import TrainingState
 from app.ml.util.data_processing import calculate_classification_report, extract_features, split_to_data_windows
 from pandas.core.frame import DataFrame
@@ -28,8 +29,8 @@ class Trainer():
 
     def train(self):
         set_start_method("fork", force=True)
-        self.setup()
         try:
+            self.setup()
             #------------------------------------FEATURE_EXTRACTION-----------------------------------#
             self.data_set_manager.set_training_state(TrainingState.FEATURE_EXTRACTION)
             # Get the data frame ready for pipeline
@@ -62,10 +63,15 @@ class Trainer():
                 label_encoder=label_encoder,
                 pipeline=pipeline
             )
-        finally:
-            # We want to set the training state back to no active training no matter what
-            # so that an internal error does not block the whole workspace
-            self.data_set_manager.set_training_state(TrainingState.NO_ACTIVE_TRAINING)
+            # Done
+            self.data_set_manager.set_training_state(TrainingState.TRAINING_SUCCESSFUL)
+        except WorkspaceManagementConnectionError:
+            self.data_set_manager.set_training_state(TrainingState.WORKSPACE_MANAGEMENT_CONNECTION_ERROR)
+        except NoSampleInWorkspaceError:
+            self.data_set_manager.set_training_state(TrainingState.NO_SAMPLE_ERROR)
+        except Exception as e:
+            self.data_set_manager.set_training_state(TrainingState.TRAINING_ERROR)
+            raise e
 
     def gather_features_and_labels(self) -> Tuple[DataFrame, List[str]]:
         sliding_window = self.training_config.sliding_window

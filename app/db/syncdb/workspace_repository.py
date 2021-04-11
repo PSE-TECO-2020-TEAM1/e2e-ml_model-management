@@ -46,6 +46,6 @@ class WorkspaceRepository():
         self.set_workspace_field(workspace_id, "training_data_set", asdict(training_data_set))
         
     def add_ml_model_ref(self, workspace_id: ObjectId, ml_model_id: ObjectId):
-        result = self.collection.update_one({"_id": workspace_id}, {"$push": {"trained_ml_model_refs": ml_model_id}})
+        result = self.collection.update_one({"_id": workspace_id}, {"$push": {"ml_model_refs": ml_model_id}})
         if not result:
             raise NonExistentError("Could not set ML model reference")

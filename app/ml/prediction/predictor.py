@@ -4,7 +4,7 @@ from pymongo.database import Database
 from app.models.schemas.prediction_data import SampleInPredict
 from pandas.core.indexes.base import Index
 from app.ml.util.data_processing import extract_features, roll_data_frame
-from app.ml.util.sample_parsing import parse_sensor_data_points_in_predict
+from app.ml.util.sample_parsing import parse_sensor_data_points_in_predict, validate_sensor_data_points_in_predict
 from app.ml.prediction.data_set_manager import DataSetManager
 from multiprocessing import set_start_method
 from multiprocessing.synchronize import Semaphore as SemaphoreType
@@ -31,6 +31,10 @@ class Predictor():
             while not semaphore.acquire():
                 pass
             data: SampleInPredict = predictor_end.recv()
+            try:
+                validate_sensor_data_points_in_predict(data, workspace_sensors)
+            except ValueError:
+                predictor_end.send(["Invalid data!"])
             parsed_df = parse_sensor_data_points_in_predict(data, workspace_sensors)
             prediction_df = pd.concat([prediction_df, parsed_df], ignore_index=True)
             if len(prediction_df.index) < sliding_window.window_size:
