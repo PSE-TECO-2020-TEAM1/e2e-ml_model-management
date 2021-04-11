@@ -36,7 +36,7 @@ async def get_workspace_by_id_from_path(workspaceId: OID) -> Workspace:
 
 async def get_ml_model_by_id_from_path(workspaceId: OID, modelId: OID) -> MlModel:
     workspace = await get_workspace(workspaceId)
-    if modelId not in workspace.trained_ml_model_refs:
+    if modelId not in workspace.ml_model_refs:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="The request model does not exist in the workspace")
     return await get_ml_model(modelId)
 

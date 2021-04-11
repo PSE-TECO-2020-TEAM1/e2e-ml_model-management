@@ -12,4 +12,4 @@ class Workspace(DbDoc):
     sensors: Dict[str, Sensor]
     training_data_set: TrainingDataSet = TrainingDataSet()
     training_state: TrainingState = TrainingState.NO_TRAINING_YET
-    trained_ml_model_refs: List[ObjectId] = field(default_factory=list)
+    ml_model_refs: List[ObjectId] = field(default_factory=list)
