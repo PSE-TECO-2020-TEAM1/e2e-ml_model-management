@@ -13,11 +13,11 @@ class MlModelRepositoryStub():
     def get_ml_model(self, id: ObjectId) -> MlModel:
         if id not in self.models:
             raise NonExistentError("Workspace with the given id does not exist")
-            pass
         
         return self.models[id]
 
     def add_ml_model(self, ml_model: MlModel) -> ObjectId:
         id = ObjectId(random_object_id.generate())
+        ml_model._id = id
         self.models[id] = ml_model
         return id

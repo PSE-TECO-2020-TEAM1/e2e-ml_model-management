@@ -12,5 +12,5 @@ def get_workspace_stub():
         sensors={"Accelerometer": Sensor(sampling_rate=60, components=["x", "y", "z"]),
                  "Gyroscope": Sensor(sampling_rate=50, components=["x", "y", "z"])},
         training_data_set=get_training_data_set_stub(),
-        training_state=TrainingState.NO_ACTIVE_TRAINING,
-        ml_model_refs=[])
+        training_state=TrainingState.NO_TRAINING_YET,
+        ml_model_refs=["60736013b961d239c76711a3", "607367362d98418cae5a1522"])

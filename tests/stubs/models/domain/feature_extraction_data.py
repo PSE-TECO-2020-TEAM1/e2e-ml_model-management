@@ -79,29 +79,29 @@ def get_sensor_component_feature_dfs_5_1():
                 "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
         },
         "y_Accelerometer": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
-            Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+            Feature.MINIMUM: DataFrame([{"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}]),
+            Feature.MAXIMUM: DataFrame([{"y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}, {
+                "y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}])
         },
         "z_Accelerometer": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
-            Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+            Feature.MINIMUM: DataFrame([{"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}]),
+            Feature.MAXIMUM: DataFrame([{"z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}, {
+                "z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}])
         },
         "x_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
-            Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+            Feature.MINIMUM: DataFrame([{"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}]),
+            Feature.MAXIMUM: DataFrame([{"x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}, {
+                "x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}])
         },
         "y_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
-            Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+            Feature.MINIMUM: DataFrame([{"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}]),
+            Feature.MAXIMUM: DataFrame([{"y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}, {
+                "y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}])
         },
         "z_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
-            Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+            Feature.MINIMUM: DataFrame([{"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}]),
+            Feature.MAXIMUM: DataFrame([{"z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}, {
+                "z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}])
         }
     }
 
@@ -172,28 +172,28 @@ def get_sensor_component_feature_dfs_4_2():
                 "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
         },
         "y_Accelerometer": {
-            Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-            Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-                "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
+            Feature.MEAN: DataFrame([{"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}]),
+            Feature.MEDIAN: DataFrame([{"y_Accelerometer__median": 1.0}, {"y_Accelerometer__median": 1.0}, {
+                "y_Accelerometer__median": 1.0}, {"y_Accelerometer__median": 1.0}])
         },
         "z_Accelerometer": {
-            Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-            Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-                "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
+            Feature.MEAN: DataFrame([{"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}]),
+            Feature.MEDIAN: DataFrame([{"z_Accelerometer__median": 1.0}, {"z_Accelerometer__median": 1.0}, {
+                "z_Accelerometer__median": 1.0}, {"z_Accelerometer__median": 1.0}])
         },
         "x_Gyroscope": {
-            Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-            Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-                "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
+            Feature.MEAN: DataFrame([{"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}]),
+            Feature.MEDIAN: DataFrame([{"x_Gyroscope__median": 1.0}, {"x_Gyroscope__median": 1.0}, {
+                "x_Gyroscope__median": 1.0}, {"x_Gyroscope__median": 1.0}])
         },
         "y_Gyroscope": {
-            Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-            Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-                "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
+            Feature.MEAN: DataFrame([{"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}]),
+            Feature.MEDIAN: DataFrame([{"y_Gyroscope__median": 1.0}, {"y_Gyroscope__median": 1.0}, {
+                "y_Gyroscope__median": 1.0}, {"y_Gyroscope__median": 1.0}])
         },
         "z_Gyroscope": {
-            Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-            Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-                "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
+            Feature.MEAN: DataFrame([{"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}]),
+            Feature.MEDIAN: DataFrame([{"z_Gyroscope__median": 1.0}, {"z_Gyroscope__median": 1.0}, {
+                "z_Gyroscope__median": 1.0}, {"z_Gyroscope__median": 1.0}])
         }
     }
