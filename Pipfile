@@ -17,6 +17,7 @@ dacite = "*"
 pandas = "*"
 setuptools = "*"
 pymongo = "==3.11.3"
+starlette = "*"
 
 [dev-packages]
 mongomock = "*"
