@@ -4,6 +4,7 @@ from bson.objectid import ObjectId
 from app.workspace_management_api.data_source import ExternalDataSource
 from app.core.config import WORKSPACE_MANAGEMENT_IP_PORT
 import requests
+import dacite
 
 
 class WorkspaceDataSource(ExternalDataSource):
@@ -18,5 +19,4 @@ class WorkspaceDataSource(ExternalDataSource):
     def fetch_samples(user_id: ObjectId, workspace_id: ObjectId) -> List[SampleFromWorkspace]:
         url = WORKSPACE_MANAGEMENT_IP_PORT + "/api/workspaces/" + str(workspace_id) + "/samples?showDataPoints=true"
         received_samples = requests.get(url=url, headers=WorkspaceDataSource.get_auth_header(user_id)).json()
-        return [SampleFromWorkspace(**sample) for sample in received_samples]
-    
+        return [dacite.from_dict(data_class=SampleFromWorkspace, data=sample) for sample in received_samples]

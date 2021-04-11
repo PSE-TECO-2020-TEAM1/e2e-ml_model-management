@@ -28,8 +28,8 @@ class Trainer():
 
     def train(self):
         set_start_method("fork", force=True)
-        self.setup()
         try:
+            self.setup()
             #------------------------------------FEATURE_EXTRACTION-----------------------------------#
             self.data_set_manager.set_training_state(TrainingState.FEATURE_EXTRACTION)
             # Get the data frame ready for pipeline
