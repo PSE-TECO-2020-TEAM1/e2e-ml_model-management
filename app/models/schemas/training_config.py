@@ -10,7 +10,7 @@ class PerComponentConfigInTrain(MongoModel):
     sensor: str
     component: str
     features: List[Feature]
-    imputer: Imputation
+    imputation: Imputation
     normalizer: Normalization
 
 class TrainingConfigInTrain(MongoModel):
