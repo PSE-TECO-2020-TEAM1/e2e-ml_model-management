@@ -17,6 +17,10 @@ class WorkspaceRepository():
     def __init__(self, db: Database):
         self.collection = db[WORKSPACE_COLLECTION_NAME]
 
+    def contains_workspace_id(self, workspace_id: ObjectId) -> Workspace:
+        workspace = self.collection.find_one({"_id": workspace_id})
+        return workspace is not None
+
     def get_workspace(self, workspace_id: ObjectId) -> Workspace:
         workspace = self.collection.find_one({"_id": workspace_id})
         if workspace is None:

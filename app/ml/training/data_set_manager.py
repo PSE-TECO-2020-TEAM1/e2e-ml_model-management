@@ -26,6 +26,8 @@ class DataSetManager():
     def is_valid_data_set_manager(self):
         if not self.db_is_set:
             raise TrainingError("Database is not configured")
+        if not self.workspace_repository.contains_workspace_id(self.workspace_id):
+            raise TrainingError("There is no workspace with the id with which this data set manager was initialized")
 
     def set_db(self, db: Database):
         self.db_is_set = True
@@ -62,18 +64,25 @@ class DataSetManager():
     def get_labels_of_data_windows(self, sliding_window: SlidingWindow) -> List[str]:
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+        if str(sliding_window) not in training_data_set.feature_extraction_cache:
+            raise TrainingError("There is no cached split to windows with the given sliding window")
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].labels_of_data_windows_file_ID
         return FeatureExtractionData.deserialize_labels_of_data_windows(self.file_repository.get_file(file_ID))
 
     def get_cached_split_to_windows(self, sliding_window: SlidingWindow) -> DataFrame:
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+        if str(sliding_window) not in training_data_set.feature_extraction_cache:
+            raise TrainingError("There is no cached split to windows with the given sliding window")
         file_ID = training_data_set.feature_extraction_cache[str(sliding_window)].data_windows_df_file_ID
         return FeatureExtractionData.deserialize_data_windows_df(self.file_repository.get_file(file_ID))
 
     def add_split_to_windows(self, sliding_window: SlidingWindow, data_windows: DataFrame, labels_of_data_windows: List[str]):
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+
+        assert str(sliding_window) not in training_data_set.feature_extraction_cache
+
         data_windows_df_file_ID = self.file_repository.put_file(
             FeatureExtractionData.serialize_data_windows_df(data_windows))
         labels_of_data_windows_file_ID = self.file_repository.put_file(
@@ -93,13 +102,27 @@ class DataSetManager():
     def get_cached_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature) -> DataFrame:
         self.is_valid_data_set_manager()
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+
+        if str(sliding_window) not in training_data_set.feature_extraction_cache or sensor_component not in training_data_set.feature_extraction_cache[str(
+            sliding_window)].sensor_component_feature_df_file_IDs or feature not in training_data_set.feature_extraction_cache[str(
+                sliding_window)].sensor_component_feature_df_file_IDs[sensor_component]:
+            raise TrainingError(
+                "There is no cached feature extraction data with the given sliding window, sensor component and feature")
+
         file_ID = training_data_set.feature_extraction_cache[str(
             sliding_window)].sensor_component_feature_df_file_IDs[sensor_component][feature]
         return FeatureExtractionData.deserialize_sensor_component_feature_df(self.file_repository.get_file(file_ID))
 
     def add_sensor_component_feature(self, sliding_window: SlidingWindow, sensor_component: SensorComponent, feature: Feature, feature_df: DataFrame):
         self.is_valid_data_set_manager()
+
         training_data_set = self.workspace_repository.get_training_data_set(self.workspace_id)
+
+        assert str(sliding_window) in training_data_set.feature_extraction_cache
+        assert sensor_component not in training_data_set.feature_extraction_cache[str(
+            sliding_window)].sensor_component_feature_df_file_IDs or feature not in training_data_set.feature_extraction_cache[str(
+                sliding_window)].sensor_component_feature_df_file_IDs[sensor_component]
+
         file_IDs_dict = training_data_set.feature_extraction_cache[str(
             sliding_window)].sensor_component_feature_df_file_IDs
         file_ID = self.file_repository.put_file(FeatureExtractionData.serialize_sensor_component_feature_df(feature_df))
