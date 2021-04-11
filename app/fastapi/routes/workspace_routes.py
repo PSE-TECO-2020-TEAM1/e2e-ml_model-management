@@ -71,7 +71,7 @@ async def get_model(ml_model: MlModel = Depends(get_ml_model_by_id_from_path)):
 
 
 @router.delete("/{workspaceId}/models/{modelId}", status_code=status.HTTP_200_OK)
-async def delete_model(workspaceId: ObjectId, ml_model: MlModel = Depends(get_ml_model_by_id_from_path)):
+async def delete_model(workspaceId: OID, ml_model: MlModel = Depends(get_ml_model_by_id_from_path)):
     # Get the model to validate that it exists under the workspace
     await delete_ml_model(ml_model._id)
     await delete_ml_model_ref_from_workspace(workspaceId, ml_model._id)

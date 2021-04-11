@@ -20,6 +20,9 @@ class WorkspaceRepository():
             raise NonExistentError("Workspace with the given id does not exist")
         return dacite.from_dict(data_class=Workspace, data=workspace, config=dacite.Config(cast=[SensorComponent, Enum]))
 
+    async def workspace_exists(self, workspace_id: ObjectId) -> bool:
+        return bool(await self.collection.find_one({"_id": workspace_id}))
+
     async def add_workspace(self, workspace: Workspace) -> ObjectId:
         workspace_dict = workspace.dict_for_db_insertion()
         result = await self.collection.insert_one(workspace_dict)

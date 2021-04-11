@@ -1,3 +1,5 @@
+from starlette import status
+from starlette.exceptions import HTTPException
 from app.ml.training.training_state import TrainingState
 from app.db.asyncdb.workspace_repository import WorkspaceRepository
 from app.models.domain.prediction_key import PredictionKey
@@ -16,6 +18,9 @@ async def get_workspace(workspace_id: ObjectId) -> Workspace:
     return workspace
 
 async def add_workspace(workspace: Workspace):
+    workspace_repository = WorkspaceRepository(get_async_db())
+    if await workspace_repository.workspace_exists(workspace._id):
+        raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, detail="This workspace id is already in use.")
     await WorkspaceRepository(get_async_db()).add_workspace(workspace)
 
 async def get_ml_model(ml_model_id: ObjectId) -> MlModel:
