@@ -5,13 +5,11 @@ name = "pypi"
 
 [packages]
 fastapi = "*"
-bson = "*"
 pymongo = "*"
 autopep8 = "*"
 tsfresh = "*"
 sklearn = "*"
 pyts = "*"
-mypy = "*"
 pyjwt = "*"
 motor = "*"
 configspace = "*"
