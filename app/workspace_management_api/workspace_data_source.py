@@ -2,9 +2,9 @@ from typing import List
 from app.workspace_management_api.sample_model import SampleFromWorkspace
 from bson.objectid import ObjectId
 from app.workspace_management_api.data_source import ExternalDataSource
+from app.core.config import WORKSPACE_MANAGEMENT_IP_PORT
 import requests
 
-WORKSPACE_MANAGEMENT_IP_PORT = "http://0.0.0.0:3000"
 
 class WorkspaceDataSource(ExternalDataSource):
 
