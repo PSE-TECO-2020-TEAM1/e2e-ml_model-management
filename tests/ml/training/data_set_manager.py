@@ -22,6 +22,8 @@ from tests.stubs.models.domain.sample import (get_interpolated_sample_stub_1,
 from tests.stubs.models.domain.workspace import get_workspace_stub
 from tests.stubs.workspace_management_api.data_source import DataSourceStub
 
+# TODO maybe create fixtures for sensor components and features for each sliding window ?
+
 interpolated_sample_stubs = [get_interpolated_sample_stub_1(), get_interpolated_sample_stub_2()]
 
 
@@ -76,15 +78,27 @@ def sensor_component_feature_dfs_4_2():
 
 
 @pytest.fixture
+def sliding_window_4_2():
+    return SlidingWindow(window_size=4, sliding_step=2)
+
+
+@pytest.fixture
+def sliding_window_5_1():
+    return SlidingWindow(window_size=5, sliding_step=1)
+
+
+@pytest.fixture
 def workspace_repository_stub(workspace_stub: Workspace):
     return WorkspaceRepositoryStub(init={workspace_stub._id: workspace_stub})
 
 
 @pytest.fixture
-def file_repository_stub(workspace_stub, interpolated_sample_stub_1, interpolated_sample_stub_2, data_windows_df_5_1, labels_of_data_windows_5_1, sensor_component_feature_dfs_5_1, data_windows_df_4_2, labels_of_data_windows_4_2, sensor_component_feature_dfs_4_2):
+def file_repository_stub(workspace_stub, interpolated_sample_stub_1, interpolated_sample_stub_2, data_windows_df_5_1, labels_of_data_windows_5_1, sensor_component_feature_dfs_5_1, sliding_window_5_1, data_windows_df_4_2, labels_of_data_windows_4_2, sensor_component_feature_dfs_4_2, sliding_window_4_2):
     training_data_set_stub: TrainingDataSet = workspace_stub.training_data_set
-    feature_extraction_data_stub_5_1: FeatureExtractionData = training_data_set_stub.feature_extraction_cache["5_1"]
-    feature_extraction_data_stub_4_2: FeatureExtractionData = training_data_set_stub.feature_extraction_cache["4_2"]
+    feature_extraction_data_stub_5_1: FeatureExtractionData = training_data_set_stub.feature_extraction_cache[str(
+        sliding_window_5_1)]
+    feature_extraction_data_stub_4_2: FeatureExtractionData = training_data_set_stub.feature_extraction_cache[str(
+        sliding_window_4_2)]
 
     init = {}
 
@@ -165,111 +179,163 @@ def test_get_sample_list_with_no_sample_list(data_set_manager, workspace_stub):
         data_set_manager.get_sample_list()
 
 
-def test_is_cached_split_to_windows(data_set_manager):
-    assert data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=5, sliding_step=1))
-    assert data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=4, sliding_step=2))
+def test_is_cached_split_to_windows(data_set_manager, sliding_window_5_1, sliding_window_4_2):
+    assert data_set_manager.is_cached_split_to_windows(sliding_window_5_1)
+    assert data_set_manager.is_cached_split_to_windows(sliding_window_4_2)
     assert not data_set_manager.is_cached_split_to_windows(SlidingWindow(window_size=5, sliding_step=2))
 
 
-def test_get_labels_of_data_windows(data_set_manager, labels_of_data_windows_4_2, labels_of_data_windows_5_1):
-    assert data_set_manager.get_labels_of_data_windows(SlidingWindow(
-        window_size=4, sliding_step=2)) == labels_of_data_windows_4_2
-    assert data_set_manager.get_labels_of_data_windows(SlidingWindow(
-        window_size=5, sliding_step=1)) == labels_of_data_windows_5_1
+def test_get_labels_of_data_windows(data_set_manager, labels_of_data_windows_4_2, labels_of_data_windows_5_1, sliding_window_4_2, sliding_window_5_1):
+    assert data_set_manager.get_labels_of_data_windows(sliding_window_4_2) == labels_of_data_windows_4_2
+    assert data_set_manager.get_labels_of_data_windows(sliding_window_5_1) == labels_of_data_windows_5_1
     with pytest.raises(KeyError):
         data_set_manager.get_labels_of_data_windows(SlidingWindow(window_size=4, sliding_step=1))
 
 
-def test_get_cached_split_to_windows(data_set_manager, data_windows_df_4_2, data_windows_df_5_1):
-    assert data_set_manager.get_cached_split_to_windows(SlidingWindow(
-        window_size=4, sliding_step=2)).equals(data_windows_df_4_2)
-    assert data_set_manager.get_cached_split_to_windows(SlidingWindow(
-        window_size=5, sliding_step=1)).equals(data_windows_df_5_1)
+def test_get_cached_split_to_windows(data_set_manager, data_windows_df_4_2, data_windows_df_5_1, sliding_window_4_2, sliding_window_5_1):
+    assert data_set_manager.get_cached_split_to_windows(sliding_window_4_2).equals(data_windows_df_4_2)
+    assert data_set_manager.get_cached_split_to_windows(sliding_window_5_1).equals(data_windows_df_5_1)
     with pytest.raises(KeyError):
         data_set_manager.get_cached_split_to_windows(SlidingWindow(window_size=8, sliding_step=6))
 
 
-def test_add_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, data_windows_df_5_1, labels_of_data_windows_5_1):
-    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
-    file_repository_stub.delete_file(feature_extraction_data_stub_4_2.data_windows_df_file_ID)
-    file_repository_stub.delete_file(feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)
+def test_add_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, sliding_window_4_2, data_windows_df_5_1, labels_of_data_windows_5_1, sliding_window_5_1):
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)]
+    for file_id in feature_extraction_data_stub_4_2.get_all_file_IDs():
+        file_repository_stub.delete_file(file_id)
+    workspace_stub.training_data_set.feature_extraction_cache.pop(str(sliding_window_4_2))
 
-    data_set_manager.add_split_to_windows(SlidingWindow(window_size=4, sliding_step=2),
-                                          data_windows_df_4_2, labels_of_data_windows_4_2)
+    data_set_manager.add_split_to_windows(sliding_window_4_2, data_windows_df_4_2, labels_of_data_windows_4_2)
 
-    assert "4_2" in workspace_stub.training_data_set.feature_extraction_cache
+    assert str(sliding_window_4_2) in workspace_stub.training_data_set.feature_extraction_cache
 
-    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)]
+    assert not feature_extraction_data_stub_4_2.sensor_component_feature_df_file_IDs
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_4_2.data_windows_df_file_ID)).equals(data_windows_df_4_2)
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)) == labels_of_data_windows_4_2
 
-    assert "5_1" in workspace_stub.training_data_set.feature_extraction_cache
+    assert str(sliding_window_5_1) in workspace_stub.training_data_set.feature_extraction_cache
 
-    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache["5_1"]
+    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)]
+    assert feature_extraction_data_stub_5_1.sensor_component_feature_df_file_IDs
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_5_1.data_windows_df_file_ID)).equals(data_windows_df_5_1)
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_5_1.labels_of_data_windows_file_ID)) == labels_of_data_windows_5_1
 
 
-def test_add_split_to_windows_with_already_existing_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, data_windows_df_5_1, labels_of_data_windows_5_1):
-    data_set_manager.add_split_to_windows(SlidingWindow(window_size=4, sliding_step=2),
-                                          data_windows_df_4_2, labels_of_data_windows_4_2)
+def test_add_split_to_windows_with_already_existing_split_to_windows(data_set_manager, workspace_stub, file_repository_stub, data_windows_df_4_2, labels_of_data_windows_4_2, sliding_window_4_2, data_windows_df_5_1, labels_of_data_windows_5_1, sliding_window_5_1):
+    data_set_manager.add_split_to_windows(sliding_window_4_2, data_windows_df_4_2, labels_of_data_windows_4_2)
 
-    assert "4_2" in workspace_stub.training_data_set.feature_extraction_cache
+    assert str(sliding_window_4_2) in workspace_stub.training_data_set.feature_extraction_cache
 
-    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache["4_2"]
+    feature_extraction_data_stub_4_2 = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)]
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_4_2.data_windows_df_file_ID)).equals(data_windows_df_4_2)
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_4_2.labels_of_data_windows_file_ID)) == labels_of_data_windows_4_2
 
-    assert "5_1" in workspace_stub.training_data_set.feature_extraction_cache
+    assert str(sliding_window_5_1) in workspace_stub.training_data_set.feature_extraction_cache
 
-    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache["5_1"]
+    feature_extraction_data_stub_5_1 = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)]
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_5_1.data_windows_df_file_ID)).equals(data_windows_df_5_1)
     assert pickle.loads(file_repository_stub.get_file(
         feature_extraction_data_stub_5_1.labels_of_data_windows_file_ID)) == labels_of_data_windows_5_1
 
 
-def test_is_cached_sensor_component_feature(data_set_manager):
-    assert data_set_manager.is_cached_sensor_component_feature(SlidingWindow(
-        window_size=5, sliding_step=1), "x_Accelerometer", Feature.MINIMUM)
-    assert data_set_manager.is_cached_sensor_component_feature(SlidingWindow(
-        window_size=5, sliding_step=1), "y_Accelerometer", Feature.MAXIMUM)
-    assert data_set_manager.is_cached_sensor_component_feature(
-        SlidingWindow(window_size=4, sliding_step=2), "z_Accelerometer", Feature.MEAN)
-    assert data_set_manager.is_cached_sensor_component_feature(
-        SlidingWindow(window_size=4, sliding_step=2), "z_Gyroscope", Feature.MEDIAN)
+def test_is_cached_sensor_component_feature(data_set_manager, sliding_window_5_1, sliding_window_4_2):
+    assert data_set_manager.is_cached_sensor_component_feature(sliding_window_5_1, "x_Accelerometer", Feature.MINIMUM)
+    assert data_set_manager.is_cached_sensor_component_feature(sliding_window_5_1, "y_Accelerometer", Feature.MAXIMUM)
+    assert data_set_manager.is_cached_sensor_component_feature(sliding_window_4_2, "z_Accelerometer", Feature.MEAN)
+    assert data_set_manager.is_cached_sensor_component_feature(sliding_window_4_2, "z_Gyroscope", Feature.MEDIAN)
 
     assert not data_set_manager.is_cached_sensor_component_feature(
         SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
     assert not data_set_manager.is_cached_sensor_component_feature(
-        SlidingWindow(window_size=5, sliding_step=1), "a_Accelerometer", Feature.MINIMUM)
-    assert not data_set_manager.is_cached_sensor_component_feature(
-        SlidingWindow(window_size=5, sliding_step=1), "x_Accelerometer", Feature.MEAN)
+        sliding_window_5_1, "a_Accelerometer", Feature.MINIMUM)
+    assert not data_set_manager.is_cached_sensor_component_feature(sliding_window_5_1, "x_Accelerometer", Feature.MEAN)
 
-def test_get_cached_sensor_component_feature(data_set_manager, sensor_component_feature_dfs_5_1, sensor_component_feature_dfs_4_2):
-    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=1), "x_Accelerometer", Feature.MINIMUM).equals(sensor_component_feature_dfs_5_1["x_Accelerometer"][Feature.MINIMUM])
-    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=1), "y_Accelerometer", Feature.MAXIMUM).equals(sensor_component_feature_dfs_5_1["y_Accelerometer"][Feature.MAXIMUM])
-    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=4, sliding_step=2), "z_Accelerometer", Feature.MEAN).equals(sensor_component_feature_dfs_4_2["z_Accelerometer"][Feature.MEAN])
-    assert data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=4, sliding_step=2), "z_Gyroscope", Feature.MEDIAN).equals(sensor_component_feature_dfs_4_2["x_Gyroscope"][Feature.MEDIAN])
+
+def test_get_cached_sensor_component_feature(data_set_manager, sensor_component_feature_dfs_5_1, sliding_window_5_1, sensor_component_feature_dfs_4_2, sliding_window_4_2):
+    assert data_set_manager.get_cached_sensor_component_feature(sliding_window_5_1, "x_Accelerometer", Feature.MINIMUM).equals(
+        sensor_component_feature_dfs_5_1["x_Accelerometer"][Feature.MINIMUM])
+    assert data_set_manager.get_cached_sensor_component_feature(sliding_window_5_1, "y_Accelerometer", Feature.MAXIMUM).equals(
+        sensor_component_feature_dfs_5_1["y_Accelerometer"][Feature.MAXIMUM])
+    assert data_set_manager.get_cached_sensor_component_feature(sliding_window_4_2, "z_Accelerometer", Feature.MEAN).equals(
+        sensor_component_feature_dfs_4_2["z_Accelerometer"][Feature.MEAN])
+    assert data_set_manager.get_cached_sensor_component_feature(sliding_window_4_2, "z_Gyroscope", Feature.MEDIAN).equals(
+        sensor_component_feature_dfs_4_2["x_Gyroscope"][Feature.MEDIAN])
 
     with pytest.raises(KeyError):
-        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
-    
-    with pytest.raises(KeyError):
-        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
-    
-    with pytest.raises(KeyError):
-        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
+        data_set_manager.get_cached_sensor_component_feature(SlidingWindow(
+            window_size=5, sliding_step=2), "x_Accelerometer", Feature.MINIMUM)
 
-def test_add_sensor_component_feature(data_set_manager):
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_sensor_component_feature(sliding_window_5_1, "a_Accelerometer", Feature.MINIMUM)
+
+    with pytest.raises(KeyError):
+        data_set_manager.get_cached_sensor_component_feature(sliding_window_5_1, "x_Accelerometer", Feature.MEAN)
+
+
+def test_add_sensor_component_feature_with_new_sensor_component(data_set_manager, file_repository_stub, workspace_stub, sensor_component_feature_dfs_5_1, sliding_window_5_1, sensor_component_feature_dfs_4_2, sliding_window_4_2):
+    # In this case, the sensor component is not a key in sensor_component_feature_df_file_IDs
+    file_repository_stub.delete_file(
+        workspace_stub.training_data_set.feature_extraction_cache[str(sliding_window_5_1)].sensor_component_feature_df_file_IDs["x_Accelerometer"][Feature.MINIMUM])
+    file_repository_stub.delete_file(workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)].sensor_component_feature_df_file_IDs["x_Accelerometer"][Feature.MAXIMUM])
+    workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)].sensor_component_feature_df_file_IDs.pop("x_Accelerometer")
+
+    data_set_manager.add_sensor_component_feature(str(
+        sliding_window_5_1), "x_Accelerometer", Feature.MINIMUM, sensor_component_feature_dfs_5_1["x_Accelerometer"][Feature.MINIMUM])
+
+    assert "x_Accelerometer" in workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)].sensor_component_feature_df_file_IDs
+    assert Feature.MINIMUM in workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)].sensor_component_feature_df_file_IDs["x_Accelerometer"]
+
+    new_sensor_component_feature_5_1_file_id = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_5_1)].sensor_component_feature_df_file_IDs["x_Accelerometer"][Feature.MINIMUM]
+
+    assert pickle.loads(file_repository_stub.get_file(new_sensor_component_feature_5_1_file_id)).equals(
+        sensor_component_feature_dfs_5_1["x_Accelerometer"][Feature.MINIMUM])
+
+    # In this case, the sensor component is a key in sensor_component_feature_df_file_IDs but it maps to an empty dictionary
+
+    file_repository_stub.delete_file(
+        workspace_stub.training_data_set.feature_extraction_cache[str(sliding_window_4_2)].sensor_component_feature_df_file_IDs["y_Gyroscope"][Feature.MEAN])
+    file_repository_stub.delete_file(workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)].sensor_component_feature_df_file_IDs["y_Gyroscope"][Feature.MEDIAN])
+    workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)].sensor_component_feature_df_file_IDs["y_Gyroscope"] = {}
+
+    data_set_manager.add_sensor_component_feature(
+        str(sliding_window_4_2), "y_Gyroscope", Feature.MEAN, sensor_component_feature_dfs_4_2["y_Gyroscope"][Feature.MEAN])
+
+    assert "y_Gyroscope" in workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)].sensor_component_feature_df_file_IDs
+    assert Feature.MEAN in workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)].sensor_component_feature_df_file_IDs["y_Gyroscope"]
+
+    new_sensor_component_feature_4_2_file_id = workspace_stub.training_data_set.feature_extraction_cache[str(
+        sliding_window_4_2)].sensor_component_feature_df_file_IDs["y_Gyroscope"][Feature.MEAN]
+
+    assert pickle.loads(file_repository_stub.get_file(new_sensor_component_feature_4_2_file_id)).equals(
+        sensor_component_feature_dfs_4_2["y_Gyroscope"][Feature.MEAN])
+
+
+def test_set_training_state(data_set_manager):
     # TODO
     pass
+
 
 def test_save_mode(data_set_manager):
     # TODO
