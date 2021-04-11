@@ -63,7 +63,7 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
     # Build key index for binary search
     sensor_timestamps = {}  # Sensor name -> List of all timestamps
     for i in range(len(sample.sensorDataPoints)):
-        sensor_name = sample.sensorDataPoints[i].sensor
+        sensor_name = sample.sensorDataPoints[i].sensorName
         datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
         sensor_timestamps[sensor_name] = [datapoint.timestamp for datapoint in datapoints]
 
@@ -71,7 +71,7 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
     for timeframe in sample.timeFrames:
         data_in_timeframe = {}  # Sensor name -> Data points in this timeframe
         for j in range(len(sample.sensorDataPoints)):
-            sensor_name = sample.sensorDataPoints[j].sensor
+            sensor_name = sample.sensorDataPoints[j].sensorName
             left = bisect.bisect_right(sensor_timestamps[sensor_name], timeframe.start)
             right = bisect.bisect_right(sensor_timestamps[sensor_name], timeframe.end)
             data_in_timeframe[sensor_name] = sample.sensorDataPoints[j].dataPoints[left:right]

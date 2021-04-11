@@ -16,11 +16,28 @@ config_spaces = {
     Classifier.MLP_CLASSIFIER: mlp_classifier.cs,
 }
 
-def validate_hyperparameters(classifier: Classifier, hyperparameters: Dict[str, Any]):
+def validate_and_parse_hyperparameters(classifier: Classifier, hyperparameters: Dict[str, Any]):
     if classifier not in config_spaces:
         raise ValueError("Invalid classifier name")
-    # Raises an error iff not valid
-    Configuration(config_spaces[classifier], values=hyperparameters)
+    # Cast the numeric valued strings
+    for key, value in hyperparameters.items():
+        if type(value) == str and value.isnumeric():
+            hyperparameters[key] = int(value)
+    # Raises an error if the values are invalid for the config space
+    try:
+        Configuration(config_spaces[classifier], values=hyperparameters)
+    except:
+        # TODO IMPORTANT BE MORE SPECIFIC HERE
+        raise ValueError("Invalid hyperparameters")
+    # Parse strings to actual types ( strings are required by the ConfigSpace module ¯\_(ツ)_/¯ )
+    for key, value in hyperparameters.items():
+        if value == "None":
+            hyperparameters[key] = None
+        elif value == "True":
+            hyperparameters[key] = True
+        elif value == "False":
+            hyperparameters[key] = False
+    return hyperparameters
 
 def get_hyperparameters(classifier: Classifier) -> Dict[str, Any]:
     res = {}

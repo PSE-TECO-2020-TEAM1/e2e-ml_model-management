@@ -38,10 +38,10 @@ class DataSetManager():
     def update_training_data_set(self):
         self.is_valid_data_set_manager()
         workspace = self.workspace_repository.get_workspace(self.workspace_id)
-        last_modified = self.external_data_source.last_modified(self.workspace_id)
+        last_modified = self.external_data_source.last_modified(workspace.user_id, workspace._id)
         if workspace.training_data_set.last_modified == last_modified:
             return
-        raw_samples = self.external_data_source.fetch_samples(self.workspace_id)
+        raw_samples = self.external_data_source.fetch_samples(workspace.user_id, workspace._id)
         interpolated_samples = parse_samples_from_workspace(raw_samples, workspace.sensors)
         # Don't forget to delete the old files first
         for file_id in workspace.training_data_set.get_all_file_IDs():
