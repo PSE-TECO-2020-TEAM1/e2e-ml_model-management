@@ -18,7 +18,7 @@ learning_rate_init = UniformFloatHyperparameter(name="learning_rate_init",
 # Not allowing to turn off early stopping
 early_stopping = CategoricalHyperparameter(name="early_stopping",
                                            choices=["True", "False"],  # , "off"],
-                                           default_value="False")
+                                           default_value="True")
 # Constants
 n_iter_no_change = Constant(name="n_iter_no_change", value=32)  # default=10 is too low
 validation_fraction = Constant(name="validation_fraction", value=0.1)
@@ -48,7 +48,7 @@ cs.add_hyperparameters([hidden_layer_sizes,
                         solver, batch_size, shuffle,
                         beta_1, beta_2, epsilon])
 
-validation_fraction_cond = InCondition(validation_fraction, early_stopping, ["False"])
+validation_fraction_cond = InCondition(validation_fraction, early_stopping, ["True"])
 cs.add_conditions([validation_fraction_cond])
 # We always use early stopping
 # n_iter_no_change_cond = InCondition(n_iter_no_change, early_stopping, ["valid", "train"])
