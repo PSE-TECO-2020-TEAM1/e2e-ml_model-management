@@ -19,8 +19,7 @@ def get_training_config_in_train_stub_5_1():
             normalizer=per_component_configs.pipeline_config.normalization
         ) for sensor_component, per_component_configs in training_config_stub_5_1.perComponentConfigs.items()],
         classifier=training_config_stub_5_1.classifier,
-        hyperparameters=config_spaces[Classifier.RANDOM_FOREST_CLASSIFIER].get_default_configuration(
-    ).get_dictionary()
+        hyperparameters=training_config_stub_5_1.hyperparameters
     )
 
 def get_training_config_in_response_stub_5_1():

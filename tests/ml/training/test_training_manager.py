@@ -6,6 +6,7 @@ from app.ml.training.training_manager import validate_config_and_parse_hyperpara
 from tests.stubs.models.schemas.training_config import get_training_config_in_train_stub_5_1
 from tests.stubs.models.domain.workspace import get_workspace_stub
 import pytest
+from unittest import mock
 
 
 @pytest.fixture
@@ -17,10 +18,10 @@ def valid_training_config():
 def workspace_sensors():
     return get_workspace_stub().sensors
 
-
-def test_validate_config_and_parse_hyperparameters_with_valid_config(valid_training_config, workspace_sensors):
+@mock.patch("app.ml.objects.classification.classifier_config_spaces.util.validate_and_parse_hyperparameters")
+def test_validate_config_and_parse_hyperparameters_with_valid_config(mock, valid_training_config, workspace_sensors):
     validate_config_and_parse_hyperparameters(valid_training_config, workspace_sensors)
-
+    mock.assert_called()
 
 def test_validate_config_and_parse_hyperparameters_with_windowSize_less_than_4(valid_training_config, workspace_sensors):
     valid_training_config.windowSize = 2
