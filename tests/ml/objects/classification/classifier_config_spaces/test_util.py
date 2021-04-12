@@ -36,6 +36,7 @@ def one_hyperparameter_and_value(hyperparameters_and_values) -> Tuple[str, Any]:
 
 
 def test_validate_and_parse_hyperparameters_with_valid_configuration(classifier, hyperparameters_and_values):
+    print(hyperparameters_and_values)
     validate_and_parse_hyperparameters(classifier, hyperparameters_and_values)
 
 
