@@ -31,7 +31,7 @@ def validate_config_and_parse_hyperparameters(training_config: TrainingConfigInT
         component = make_sensor_component(sensor_name, per_component_config.component)
         if sensor_name not in workspace_sensors:
             raise ValueError(sensor_name + " is not a sensor of this workspace")
-        if per_component_config.component not in workspace_sensors[sensor_name].components:
+        if component not in workspace_sensors[sensor_name].components:
             raise ValueError(component + " is not a valid component of " + sensor_name)
 
     validate_and_parse_hyperparameters(training_config.classifier, training_config.hyperparameters)

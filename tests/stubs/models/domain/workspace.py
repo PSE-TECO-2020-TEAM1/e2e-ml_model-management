@@ -9,8 +9,8 @@ def get_workspace_stub():
     return Workspace(
         _id=ObjectId("60706e79e8584d11339c91f3"),
         user_id=ObjectId("60706eabae5c8c01b0c43e33"),
-        sensors={"Accelerometer": Sensor(sampling_rate=60, components=["x", "y", "z"]),
-                 "Gyroscope": Sensor(sampling_rate=50, components=["x", "y", "z"])},
+        sensors={"Accelerometer": Sensor(sampling_rate=60, components=["x_Accelerometer", "y_Accelerometer", "z_Accelerometer"]),
+                 "Gyroscope": Sensor(sampling_rate=50, components=["x_Gyroscope", "y_Gyroscope", "z_Gyroscope"])},
         training_data_set=get_training_data_set_stub(),
         training_state=TrainingState.NO_TRAINING_YET,
         ml_model_refs=["60736013b961d239c76711a3", "607367362d98418cae5a1522"])
