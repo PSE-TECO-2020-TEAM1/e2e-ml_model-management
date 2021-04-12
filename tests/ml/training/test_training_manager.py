@@ -18,7 +18,7 @@ def valid_training_config():
 def workspace_sensors():
     return get_workspace_stub().sensors
 
-@mock.patch("app.ml.objects.classification.classifier_config_spaces.util.validate_and_parse_hyperparameters")
+@mock.patch("app.ml.training.training_manager.validate_and_parse_hyperparameters")
 def test_validate_config_and_parse_hyperparameters_with_valid_config(mock, valid_training_config, workspace_sensors):
     validate_config_and_parse_hyperparameters(valid_training_config, workspace_sensors)
     mock.assert_called()
