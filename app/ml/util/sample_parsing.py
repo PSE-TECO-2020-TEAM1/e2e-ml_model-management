@@ -15,7 +15,7 @@ def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_se
             raise ValueError("Unknown value for sensor: " + sensor_data_points.sensor)
         workspace_sensor = workspace_sensors[sensor_data_points.sensor]
         for data_point in sensor_data_points.dataPoints:
-            if len(data_point) != len(workspace_sensor.components):
+            if len(data_point.data) != len(workspace_sensor.components):
                 raise ValueError("Data for sensor " + workspace_sensor + " has more than supported number of components.")
             if (data_point.timestamp < sample.start) or (data_point.timestamp > sample.end):
                 raise ValueError("Data point has an invalid timestamp (outside of the sample timeframe)")
