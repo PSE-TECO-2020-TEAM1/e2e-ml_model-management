@@ -3,7 +3,7 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          UniformFloatHyperparameter,
                                          UniformIntegerHyperparameter,
-                                         UnParametrizedHyperparameter)
+                                         Constant)
 
 C = UniformFloatHyperparameter("C", 0.03125, 32768, log=True,
                                default_value=1.0)
@@ -22,7 +22,7 @@ shrinking = CategoricalHyperparameter("shrinking", ["True", "False"],
 tol = UniformFloatHyperparameter("tol", 1e-5, 1e-1, default_value=1e-3,
                                  log=True)
 # cache size is not a hyperparameter, but an argument to the program!
-max_iter = UnParametrizedHyperparameter("max_iter", -1)
+max_iter = Constant("max_iter", -1)
 
 cs = ConfigurationSpace()
 cs.add_hyperparameters([C, kernel, degree, gamma, coef0, shrinking,

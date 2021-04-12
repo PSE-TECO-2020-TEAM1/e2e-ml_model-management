@@ -15,12 +15,12 @@ def rfc_hyperparameters():
     return {
         "criterion": {"type": "CategoricalHyperparameter", "choices": ("gini", "entropy"), "default_value": "gini"},
         "max_features": {"type": "UniformFloatHyperparameter", "lower": 0., "upper": 1., "default_value": 0.5},
-        "max_depth": {"type": "UnParametrizedHyperparameter", "value": "None"},
+        "max_depth": {"type": "Constant", "value": "None"},
         "min_samples_split": {"type": "UniformIntegerHyperparameter", "lower": 2, "upper": 20, "default_value": 2},
         "min_samples_leaf": {"type": "UniformIntegerHyperparameter", "lower": 1, "upper": 20, "default_value": 1},
-        "min_weight_fraction_leaf": {"type": "UnParametrizedHyperparameter", "value": 0.},
-        "max_leaf_nodes": {"type": "UnParametrizedHyperparameter", "value": "None"},
-        "min_impurity_decrease": {"type": "UnParametrizedHyperparameter", "value": 0.0},
+        "min_weight_fraction_leaf": {"type": "Constant", "value": 0.},
+        "max_leaf_nodes": {"type": "Constant", "value": "None"},
+        "min_impurity_decrease": {"type": "Constant", "value": 0.0},
         "bootstrap": {"type": "CategoricalHyperparameter", "choices": ("True", "False"), "default_value": "True"}
     }
 

@@ -3,8 +3,7 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          Constant,
                                          UniformFloatHyperparameter,
-                                         UniformIntegerHyperparameter,
-                                         UnParametrizedHyperparameter)
+                                         UniformIntegerHyperparameter)
 cs = ConfigurationSpace()
 hidden_layer_depth = UniformIntegerHyperparameter(name="hidden_layer_depth",
                                                   lower=1, upper=3, default_value=1)
@@ -26,15 +25,15 @@ early_stopping = CategoricalHyperparameter(name="early_stopping",
 # Constants
 n_iter_no_change = Constant(name="n_iter_no_change", value=32)  # default=10 is too low
 validation_fraction = Constant(name="validation_fraction", value=0.1)
-tol = UnParametrizedHyperparameter(name="tol", value=1e-4)
+tol = Constant(name="tol", value=1e-4)
 solver = Constant(name="solver", value='adam')
 
 # Relying on sklearn defaults for now
-batch_size = UnParametrizedHyperparameter(name="batch_size", value="auto")
-shuffle = UnParametrizedHyperparameter(name="shuffle", value="True")
-beta_1 = UnParametrizedHyperparameter(name="beta_1", value=0.9)
-beta_2 = UnParametrizedHyperparameter(name="beta_2", value=0.999)
-epsilon = UnParametrizedHyperparameter(name="epsilon", value=1e-8)
+batch_size = Constant(name="batch_size", value="auto")
+shuffle = Constant(name="shuffle", value="True")
+beta_1 = Constant(name="beta_1", value=0.9)
+beta_2 = Constant(name="beta_2", value=0.999)
+epsilon = Constant(name="epsilon", value=1e-8)
 
 # Not used
 # solver=["sgd", "lbfgs"] --> not used to keep searchspace simpler
