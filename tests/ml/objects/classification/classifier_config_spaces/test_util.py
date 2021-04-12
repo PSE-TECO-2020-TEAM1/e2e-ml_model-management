@@ -1,6 +1,5 @@
 from typing import Any, Tuple
 
-from _pytest.python import Class
 from app.ml.objects.classification.enum import Classifier
 from app.ml.objects.classification.classifier_config_spaces.util import config_spaces, get_conditions, get_hyperparameters, validate_and_parse_hyperparameters
 import pytest
