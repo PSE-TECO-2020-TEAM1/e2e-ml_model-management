@@ -44,7 +44,7 @@ def roll_data_frame(sliding_window: SlidingWindow, data_frame: DataFrame) -> Dat
 # Extracts features of data windows of one sensor component
 def extract_features(data_windows: DataFrame, features: List[Feature]) -> Dict[Feature, DataFrame]:
     settings = {key: ComprehensiveFCParameters()[key] for key in [str(feature.value).lower() for feature in features]}
-    extracted: DataFrame = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings)
+    extracted: DataFrame = tsfresh.extract_features(data_windows, column_id="id", default_fc_parameters=settings, disable_progressbar=True)
     result = {}
     for feature_index in range(len(features)):
         feature = features[feature_index]
