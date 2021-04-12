@@ -9,14 +9,14 @@ import bisect
 
 def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]):
     if sample.start > sample.end:
-        raise ValueError("Sample start can't be bigger than the sample end")
-    for sensor_data_points in sample.sensorDataPoints:
-        if sensor_data_points.sensor not in workspace_sensors:
-            raise ValueError("Unknown value for sensor: " + sensor_data_points.sensor)
-        workspace_sensor = workspace_sensors[sensor_data_points.sensor]
-        for data_point in sensor_data_points.dataPoints:
-            if len(data_point.data) != len(workspace_sensor.components):
-                raise ValueError("Data for sensor " + workspace_sensor + " has more than supported number of components.")
+        raise ValueError("Sample start cannot be bigger than the sample end")
+    sensor_data_point_dict = {sensor_data_points.sensor: sensor_data_points.dataPoints for sensor_data_points in sample.sensorDataPoints}
+    for sensor in workspace_sensors:
+        if sensor not in sensor_data_point_dict:
+            raise ValueError("Data from sensor not present in the sample: " + sensor)
+        for data_point in sensor_data_point_dict[sensor]:
+            if len(data_point.data) != len(workspace_sensors[sensor]):
+                raise ValueError("Data for sensor " + sensor + " has more than supported number of components.")
             if (data_point.timestamp < sample.start) or (data_point.timestamp > sample.end):
                 raise ValueError("Data point has an invalid timestamp (outside of the sample timeframe)")
 
