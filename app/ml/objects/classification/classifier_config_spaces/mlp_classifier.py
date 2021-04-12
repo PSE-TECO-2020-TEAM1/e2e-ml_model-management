@@ -48,7 +48,7 @@ cs.add_hyperparameters([hidden_layer_sizes,
                         solver, batch_size, shuffle,
                         beta_1, beta_2, epsilon])
 
-validation_fraction_cond = InCondition(validation_fraction, early_stopping, ["valid"])
+validation_fraction_cond = InCondition(validation_fraction, early_stopping, ["False"])
 cs.add_conditions([validation_fraction_cond])
 # We always use early stopping
 # n_iter_no_change_cond = InCondition(n_iter_no_change, early_stopping, ["valid", "train"])
