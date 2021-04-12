@@ -5,7 +5,7 @@ from app.ml.objects.classification.classifier_config_spaces import (kneighbours_
                                                                     mlp_classifier,
                                                                     random_forest_classifier,
                                                                     svc_classifier)
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, UniformFloatHyperparameter, CategoricalHyperparameter, Constant        
+from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, UniformFloatHyperparameter, CategoricalHyperparameter, Constant
 
 # Config spaces are all from https://github.com/automl/auto-sklearn/tree/master/autosklearn/pipeline/components/classification
 
@@ -15,6 +15,7 @@ config_spaces = {
     Classifier.SVC_CLASSIFIER: svc_classifier.cs,
     Classifier.MLP_CLASSIFIER: mlp_classifier.cs,
 }
+
 
 def validate_and_parse_hyperparameters(classifier: Classifier, hyperparameters: Dict[str, Any]):
     if classifier not in config_spaces:
@@ -39,6 +40,7 @@ def validate_and_parse_hyperparameters(classifier: Classifier, hyperparameters: 
             hyperparameters[key] = False
     return hyperparameters
 
+
 def get_hyperparameters(classifier: Classifier) -> Dict[str, Any]:
     res = {}
     hyperparameters = config_spaces[classifier].get_hyperparameters_dict()
@@ -48,11 +50,13 @@ def get_hyperparameters(classifier: Classifier) -> Dict[str, Any]:
         elif isinstance(hyperparameter, Constant):
             res[name] = {"value": hyperparameter.value}
         elif isinstance(hyperparameter, UniformIntegerHyperparameter) or isinstance(hyperparameter, UniformFloatHyperparameter):
-            res[name] = {"lower": hyperparameter.lower, "upper": hyperparameter.upper, "default_value": hyperparameter.default_value}
+            res[name] = {"lower": hyperparameter.lower, "upper": hyperparameter.upper,
+                "default_value": hyperparameter.default_value}
         else:
             raise NotImplementedError(type(hyperparameter).__name__ + ' is not supported')
         res[name]["type"] = type(hyperparameter).__name__
     return res
+
 
 def get_conditions(classifier: Classifier) -> List[str]:
     return [str(condition) for condition in config_spaces[classifier].get_conditions()]

@@ -18,7 +18,7 @@ def initiate_new_training(workspace_id: ObjectId, training_config_in_train: Trai
     Process(target=trainer.train).start()
 
 
-def validate_config(training_config: TrainingConfigInTrain, workspace_sensors: Dict[str, Sensor]):
+def validate_config_and_parse_hyperparameters(training_config: TrainingConfigInTrain, workspace_sensors: Dict[str, Sensor]):
     if training_config.windowSize < 4:
         raise ValueError("Window size must be greater than or equal to 4")
     if training_config.slidingStep < 1:
@@ -31,7 +31,7 @@ def validate_config(training_config: TrainingConfigInTrain, workspace_sensors: D
         component = make_sensor_component(sensor_name, per_component_config.component)
         if sensor_name not in workspace_sensors:
             raise ValueError(sensor_name + " is not a sensor of this workspace")
-        if component not in workspace_sensors[sensor_name].components:
-            raise ValueError(component + " not a valid component of " + sensor_name)
+        if per_component_config.component not in workspace_sensors[sensor_name].components:
+            raise ValueError(component + " is not a valid component of " + sensor_name)
 
     validate_and_parse_hyperparameters(training_config.classifier, training_config.hyperparameters)

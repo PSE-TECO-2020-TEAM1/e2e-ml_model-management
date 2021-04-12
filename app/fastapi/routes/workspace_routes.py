@@ -9,7 +9,7 @@ from app.fastapi.services import delete_ml_model, delete_ml_model_ref_from_works
 from app.fastapi.dependencies import get_ml_model_by_id_from_path, get_workspace_by_id_from_path, validate_user_of_workspace
 from typing import List
 from app.models.schemas.ml_model import MlModelInResponse, MlModelMetadataInResponse, PerformanceMetricsInResponse, SingleMetricInResponse
-from app.ml.training.training_manager import initiate_new_training, validate_config
+from app.ml.training.training_manager import initiate_new_training, validate_config_and_parse_hyperparameters
 from app.models.schemas.mongo_model import OID
 from app.models.schemas.training_config import TrainingConfigInTrain
 from app.ml.training.config_parsing import parse_config_for_response
@@ -28,7 +28,7 @@ async def post_train(training_config: TrainingConfigInTrain, workspace: Workspac
     if workspace.training_state.is_in_progress_training_state():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="There is already a training in progress, please try again once it is finished.")
-    validate_config(training_config, workspace.sensors)
+    validate_config_and_parse_hyperparameters(training_config, workspace.sensors)
     await set_training_state_to_initiated(workspace._id)
     initiate_new_training(workspace._id, training_config)
     return Response(status_code=status.HTTP_200_OK)
