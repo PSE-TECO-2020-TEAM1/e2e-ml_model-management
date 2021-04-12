@@ -36,12 +36,13 @@ class Predictor():
             except ValueError:
                 predictor_end.send(["Invalid data!"])
             parsed_df = parse_sensor_data_points_in_predict(data, workspace_sensors)
+            print(parsed_df)
             prediction_df = pd.concat([prediction_df, parsed_df], ignore_index=True)
             if len(prediction_df.index) < sliding_window.window_size:
                 # There are not enough data to do prediction
                 continue
             data_windows = roll_data_frame(sliding_window, prediction_df)
-
+            print(data_windows)
             # We want to spare the leftover, so that we can count it in the window when the next sample arrives
             leftover = sliding_window.window_size - sliding_window.sliding_step
             prediction_df = prediction_df.iloc[len(prediction_df.index) - leftover:, :]
