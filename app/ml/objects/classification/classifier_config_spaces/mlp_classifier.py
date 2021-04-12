@@ -7,9 +7,6 @@ from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
 cs = ConfigurationSpace()
 hidden_layer_sizes = UniformIntegerHyperparameter(name="hidden_layer_sizes",
                                                   lower=1, upper=3, default_value=1)
-num_nodes_per_layer = UniformIntegerHyperparameter(name="num_nodes_per_layer",
-                                                   lower=16, upper=264, default_value=32,
-                                                   log=True)
 activation = CategoricalHyperparameter(name="activation", choices=['tanh', 'relu'],
                                        default_value='relu')
 alpha = UniformFloatHyperparameter(name="alpha", lower=1e-7, upper=1e-1, default_value=1e-4,
@@ -44,7 +41,7 @@ epsilon = Constant(name="epsilon", value=1e-8)
 # max_fun --> only used when solver=lbfgs
 # activation=["identity", "logistic"] --> not useful for classification
 
-cs.add_hyperparameters([hidden_layer_sizes, num_nodes_per_layer,
+cs.add_hyperparameters([hidden_layer_sizes,
                         activation, alpha,
                         learning_rate_init, early_stopping,
                         n_iter_no_change, validation_fraction, tol,
