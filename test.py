@@ -1,140 +1,159 @@
-from app.ml.objects.classification.enum import Classifier
-from app.ml.objects.normalization.enum import Normalization
-from app.ml.objects.imputation.enum import Imputation
-from app.models.domain.sliding_window import SlidingWindow
-from app.ml.util.data_processing import calculate_classification_report, extract_features, split_to_data_windows
+from app.core.config import LABEL_OUTSIDE_OF_TIMEFRAMES
+from app.models.schemas.prediction_data import SampleInPredict
+from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
+from app.models.domain.sample import InterpolatedSample
+from typing import Dict, List
 from pandas.core.frame import DataFrame
-from app.ml.objects.feature.enum import Feature
-from multiprocessing import set_start_method
-from app.ml.objects.pipeline_factory import make_pipeline_from_config
-from typing import List, Tuple
-from sklearn.preprocessing import LabelEncoder
-from app.models.domain.training_config import PerComponentConfig, PipelineConfig, TrainingConfig
-from sklearn.model_selection import train_test_split
-import pandas as pd
-
-from app.ml.objects.classification.classifier_config_spaces.util import config_spaces
+from app.models.domain.sensor import Sensor
+import bisect
 
 
-def train(training_config: TrainingConfig):
-    set_start_method("fork", force=True)
-    #------------------------------------FEATURE_EXTRACTION-----------------------------------#
-    # Get the data frame ready for pipeline
-    x, y = gather_features_and_labels()
-    print(x)
-
-    #--------------------------------------MODEL_TRAINING-------------------------------------#
-    # We have to sort the columns correctly when we are predicting later so we save the order
-    columns = x.columns.tolist()
-    # Encode labels
-    label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y)
-    # Train-test-split
-    x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=42)
-    # Create the pipeline
-    pipeline = make_pipeline_from_config(training_config.get_component_pipeline_configs(),
-                                         training_config.classifier, training_config.hyperparameters)
-    # Fit the model
-    pipeline.fit(x_train, y_train)
-
-    #------------------------------------CLASSIFICATION_REPORT--------------------------------#
-    # Calculate performance metrics
-    test_prediction_result = pipeline.predict(x_test)
-    performance_metrics = calculate_classification_report(test_prediction_result, y_test, label_encoder)
-    return (performance_metrics, columns, label_encoder, pipeline)
+def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]):
+    if sample.start > sample.end:
+        raise ValueError("Sample start cannot be bigger than the sample end")
+    sensor_data_point_dict = {
+        sensor_data_points.sensor: sensor_data_points.dataPoints for sensor_data_points in sample.sensorDataPoints}
+    for sensor in workspace_sensors:
+        if sensor not in sensor_data_point_dict:
+            raise ValueError("Data from sensor not present in the sample: " + sensor)
+        for data_point in sensor_data_point_dict[sensor]:
+            if len(data_point.data) != len(workspace_sensors[sensor].components):
+                raise ValueError("Data for sensor " + sensor + " does not have the supported number of components.")
+            if (data_point.timestamp < sample.start) or (data_point.timestamp > sample.end):
+                raise ValueError("Data point has an invalid timestamp (outside of the sample timeframe)")
 
 
-sensor_component_feature_dfs_4_2 = {
-    "x_Accelerometer": {
-        Feature.MEAN: DataFrame([{"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}, {"x_Accelerometer__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}, {
-            "x_Accelerometer__median": 1.0}, {"x_Accelerometer__median": 1.0}])
-    },
-    "y_Accelerometer": {
-        Feature.MEAN: DataFrame([{"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}, {"y_Accelerometer__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"y_Accelerometer__median": 1.0}, {"y_Accelerometer__median": 1.0}, {
-            "y_Accelerometer__median": 1.0}, {"y_Accelerometer__median": 1.0}])
-    },
-    "z_Accelerometer": {
-        Feature.MEAN: DataFrame([{"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}, {"z_Accelerometer__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"z_Accelerometer__median": 1.0}, {"z_Accelerometer__median": 1.0}, {
-            "z_Accelerometer__median": 1.0}, {"z_Accelerometer__median": 1.0}])
-    },
-    "x_Gyroscope": {
-        Feature.MEAN: DataFrame([{"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}, {"x_Gyroscope__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"x_Gyroscope__median": 1.0}, {"x_Gyroscope__median": 1.0}, {
-            "x_Gyroscope__median": 1.0}, {"x_Gyroscope__median": 1.0}])
-    },
-    "y_Gyroscope": {
-        Feature.MEAN: DataFrame([{"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}, {"y_Gyroscope__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"y_Gyroscope__median": 1.0}, {"y_Gyroscope__median": 1.0}, {
-            "y_Gyroscope__median": 1.0}, {"y_Gyroscope__median": 1.0}])
-    },
-    "z_Gyroscope": {
-        Feature.MEAN: DataFrame([{"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}, {"z_Gyroscope__mean": 1.0}]),
-        Feature.MEDIAN: DataFrame([{"z_Gyroscope__median": 1.0}, {"z_Gyroscope__median": 1.0}, {
-            "z_Gyroscope__median": 1.0}, {"z_Gyroscope__median": 1.0}])
-    }
-}
+def parse_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+    timeframe = Timeframe(sample.start, sample.end)
+    timeframe_data = {}
+    for i in sample.sensorDataPoints:
+        timeframe_data[i.sensor] = i.dataPoints
+    return parse_timeframe(timeframe_data, timeframe, workspace_sensors)
 
 
-def gather_features_and_labels() -> Tuple[DataFrame, List[str]]:
-    result: List[DataFrame] = []
-    for sensor_component in sensor_component_feature_dfs_4_2:
-        for feature in sensor_component_feature_dfs_4_2[sensor_component]:
-            result.append(sensor_component_feature_dfs_4_2[sensor_component][feature])
-    labels = ["Shake", "Shake", "Rotate", "Rotate"]
-    return (pd.concat(result, axis=1), labels)
+def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
+    # We don't validate here since the data is from an internal service (which I hope does data validation)
+    all_interpolated_samples = []
+    for sample in samples:
+        # all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
+        # As negative data, also save the data points out of the selected time frames
+        sample.label = LABEL_OUTSIDE_OF_TIMEFRAMES
+        invert_timeframes(sample)
+        all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
+    return all_interpolated_samples
 
 
-rfc_default_hyperparameters = config_spaces[Classifier.RANDOM_FOREST_CLASSIFIER].get_default_configuration(
-).get_dictionary()
-for name, value in rfc_default_hyperparameters.items():
-    if value == "None":
-        rfc_default_hyperparameters[name] = None
-    elif value == "True":
-        rfc_default_hyperparameters[name] = True
-    elif value == "False":
-        rfc_default_hyperparameters[name] = False
+def parse_sample_from_workspace(sample: SampleFromWorkspace, workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
+    interpolated_timeframe_dfs = []
+    timeframe_data_dict = split_data_by_timeframe(sample)
+    for timeframe, timeframe_data in timeframe_data_dict.items():
+        interpolated_timeframe_dfs.append(parse_timeframe(timeframe_data, timeframe, workspace_sensors))
+    return [InterpolatedSample(label=sample.label, data_frame=df) for df in interpolated_timeframe_dfs]
 
 
-(performance_metrics, columns, label_encoder, pipeline) = train(TrainingConfig(
-    model_name="Model_4_2",
-    sliding_window=SlidingWindow(window_size=4, sliding_step=2),
-    perComponentConfigs={
-        "x_Accelerometer": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.MEAN_IMPUTATION,
-                                           normalization=Normalization.MIN_MAX_SCALER)
-        ),
-        "y_Accelerometer": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.LINEAR_INTERPOLATION,
-                                           normalization=Normalization.NORMALIZER)
-        ),
-        "z_Accelerometer": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.ZERO_INTERPOLATION,
-                                           normalization=Normalization.STANDARD_SCALER)
-        ),
-        "x_Gyroscope": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.MEAN_IMPUTATION,
-                                           normalization=Normalization.MIN_MAX_SCALER)
-        ),
-        "y_Gyroscope": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.LINEAR_INTERPOLATION,
-                                           normalization=Normalization.NORMALIZER)
-        ),
-        "z_Gyroscope": PerComponentConfig(
-            features=[Feature.MINIMUM, Feature.MAXIMUM],
-            pipeline_config=PipelineConfig(imputation=Imputation.ZERO_INTERPOLATION,
-                                           normalization=Normalization.STANDARD_SCALER)
-        )
-    },
-    classifier=Classifier.RANDOM_FOREST_CLASSIFIER,
-    hyperparameters=rfc_default_hyperparameters
-))
+def invert_timeframes(sample: SampleFromWorkspace):
+    timeframes = sample.timeFrames
+    inverted_timeframes: List[Timeframe] = []
+    # Add the beginning and the end
+    if timeframes[0].start - sample.start > 0:
+        inverted_timeframes.append(Timeframe(start=sample.start, end=timeframes[0].start))
+    if sample.end - timeframes[-1].end > 0:
+        inverted_timeframes.append(Timeframe(start=timeframes[-1].end, end=sample.end))
+    # Handle rest
+    for i in range(len(timeframes) - 1):
+        between_two = Timeframe(start=timeframes[i].end, end=timeframes[i+1].start)
+        inverted_timeframes.append(between_two)
+    sample.timeFrames = inverted_timeframes
 
-print(performance_metrics)
+
+def parse_timeframe(timeframe_data: Dict[str, List[DataPoint]], timeframe: Timeframe, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+    df_data: Dict[Sensor, List[List[float]]] = {}
+    delta = delta_of_sensors(list(workspace_sensors.values()))
+    for sensor_name, sensor_data in timeframe_data.items():
+        sensor = workspace_sensors[sensor_name]
+        df_data[sensor_name] = interpolate_sensor_data_points_in_timeframe(sensor_data, sensor, timeframe, delta)
+    return build_dataframe(df_data, workspace_sensors)
+
+
+def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict[str, List[DataPoint]]]:
+    # Build key index for binary search
+    sensor_timestamps = {}  # Sensor name -> List of all timestamps
+    for i in range(len(sample.sensorDataPoints)):
+        sensor_name = sample.sensorDataPoints[i].sensorName
+        datapoints: List[DataPoint] = sample.sensorDataPoints[i].dataPoints
+        sensor_timestamps[sensor_name] = [datapoint.timestamp for datapoint in datapoints]
+
+    data_by_timeframe = {}  # Timeframe -> (Sensor name -> Data points in this timeframe)
+    for timeframe in sample.timeFrames:
+        data_in_timeframe = {}  # Sensor name -> Data points in this timeframe
+        for j in range(len(sample.sensorDataPoints)):
+            sensor_name = sample.sensorDataPoints[j].sensorName
+            left = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.start)
+            right = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.end)
+            data_in_timeframe[sensor_name] = sample.sensorDataPoints[j].dataPoints[left:right]
+        data_by_timeframe[timeframe] = data_in_timeframe
+    return data_by_timeframe
+
+
+def delta_of_sensors(sensors: List[Sensor]) -> int:
+    # Interpolate data points from each sensor so that they all match the max.
+    max: int = -1
+    for sensor in sensors:
+        if sensor.sampling_rate > max:
+            max = sensor.sampling_rate
+    return (1000 // max) + 1
+
+
+def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sensors: Dict[str, Sensor]) -> DataFrame:
+    data_point_count = len(next(iter(data_frame_data.values())))
+    # Sanity check (each data point list per sensor must be of the same size)
+    for data in data_frame_data.values():
+        assert len(data) == data_point_count
+    rows = [{} for __range__ in range(data_point_count)]
+    for sensor_name, data in data_frame_data.items():
+        sensor = workspace_sensors[sensor_name]
+        for i in range(data_point_count):
+            for component_index in range(len(sensor.components)):
+                component = sensor.components[component_index]
+                rows[i][component] = data[i][component_index]
+    return DataFrame(rows)
+
+
+def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
+    target_len = ((timeframe.end - timeframe.start) // delta) + 1
+    # print(target_len)
+
+    # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
+    if not data_points:
+        print('yey')
+        x = [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
+        print(x)
+        return [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
+
+    raise ValueError
+    # If start and end timestamps of sample are not aligned with the given timeframe, add a default data point to the start and end of the sample.
+    # (default: first and last data point of the sample)
+    # This is necessary for the interpolation as a start value is needed to interpolate the beginning of the sample (and for the end)
+    data_points.insert(0, DataPoint(data=data_points[0].data, timestamp=timeframe.start))
+    data_points.append(DataPoint(data=data_points[-1].data, timestamp=timeframe.end))
+
+    print(data_points)
+    # Normalize the timestamps by removing the offset from each
+    for datapoint in data_points:
+        datapoint.timestamp -= timeframe.start
+
+    print(timeframe)
+    result = []
+    hi = 0
+    for i in range(target_len):
+        while i * delta >= data_points[hi].timestamp:
+            hi += 1
+        interpolation_percentage = (i * delta - data_points[hi - 1].timestamp) / \
+            (data_points[hi].timestamp - data_points[hi - 1].timestamp)
+        interpolated_datapoint = []
+        for component_index in range(len(sensor.components)):
+            difference = data_points[hi].data[component_index] - data_points[hi - 1].data[component_index]
+            interpolated_value = data_points[hi - 1].data[component_index] + difference * interpolation_percentage
+            interpolated_datapoint.append(interpolated_value)
+        result.append(interpolated_datapoint)
+    return result
