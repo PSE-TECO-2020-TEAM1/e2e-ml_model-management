@@ -35,7 +35,7 @@ def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_s
     # We don't validate here since the data is from an internal service (which I hope does data validation)
     all_interpolated_samples = []
     for sample in samples:
-        # all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
+        all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
         # As negative data, also save the data points out of the selected time frames
         sample.label = LABEL_OUTSIDE_OF_TIMEFRAMES
         invert_timeframes(sample)
