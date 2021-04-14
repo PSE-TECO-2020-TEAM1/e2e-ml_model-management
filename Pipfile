@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "==0.63.0"
+fastapi = "*"
 autopep8 = "*"
 tsfresh = "*"
 sklearn = "*"
@@ -15,9 +15,8 @@ configspace = "*"
 uvicorn = "*"
 dacite = "*"
 pandas = "*"
-setuptools = "*"
-pymongo = "==3.11.3"
-starlette = "==0.13.6"
+pymongo = "*"
+starlette = "*"
 
 [dev-packages]
 mongomock = "*"
