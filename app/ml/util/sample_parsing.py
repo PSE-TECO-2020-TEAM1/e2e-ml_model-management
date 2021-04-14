@@ -1,3 +1,4 @@
+from app.core.config import LABEL_OUTSIDE_OF_TIMEFRAME
 from app.models.schemas.prediction_data import SampleInPredict
 from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
 from app.models.domain.sample import InterpolatedSample
@@ -35,6 +36,7 @@ def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_s
     for sample in samples:
         all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
         # As negative data, also save the data points out of the selected time frames
+        sample.label = LABEL_OUTSIDE_OF_TIMEFRAME
         invert_timeframes(sample)
         all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
     return all_interpolated_samples
