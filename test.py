@@ -1,34 +1,11 @@
 from app.core.config import LABEL_OUTSIDE_OF_TIMEFRAMES
 from app.models.schemas.prediction_data import SampleInPredict
-from app.workspace_management_api.sample_model import DataPoint, SampleFromWorkspace, Timeframe
+from app.workspace_management_api.sample_model import DataPoint, DataPointsPerSensor, SampleFromWorkspace, Timeframe
 from app.models.domain.sample import InterpolatedSample
 from typing import Dict, List
 from pandas.core.frame import DataFrame
 from app.models.domain.sensor import Sensor
 import bisect
-
-
-def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]):
-    if sample.start > sample.end:
-        raise ValueError("Sample start cannot be bigger than the sample end")
-    sensor_data_point_dict = {
-        sensor_data_points.sensor: sensor_data_points.dataPoints for sensor_data_points in sample.sensorDataPoints}
-    for sensor in workspace_sensors:
-        if sensor not in sensor_data_point_dict:
-            raise ValueError("Data from sensor not present in the sample: " + sensor)
-        for data_point in sensor_data_point_dict[sensor]:
-            if len(data_point.data) != len(workspace_sensors[sensor].components):
-                raise ValueError("Data for sensor " + sensor + " does not have the supported number of components.")
-            if (data_point.timestamp < sample.start) or (data_point.timestamp > sample.end):
-                raise ValueError("Data point has an invalid timestamp (outside of the sample timeframe)")
-
-
-def parse_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]) -> DataFrame:
-    timeframe = Timeframe(sample.start, sample.end)
-    timeframe_data = {}
-    for i in sample.sensorDataPoints:
-        timeframe_data[i.sensor] = i.dataPoints
-    return parse_timeframe(timeframe_data, timeframe, workspace_sensors)
 
 
 def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_sensors: Dict[str, Sensor]) -> List[InterpolatedSample]:
@@ -120,14 +97,16 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
 
 
 def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
+    print(timeframe.end)
+    print(timeframe.start)
     target_len = ((timeframe.end - timeframe.start) // delta) + 1
-    # print(target_len)
+    print(target_len)
 
     # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
     if not data_points:
         print('yey')
         x = [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
-        print(x)
+        # print(x)
         return [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
 
     raise ValueError
@@ -157,3 +136,41 @@ def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], se
             interpolated_datapoint.append(interpolated_value)
         result.append(interpolated_datapoint)
     return result
+
+
+
+samples = [SampleFromWorkspace(
+        label="Rotate",
+        start=1617981592010,
+        end=1617981592260,
+        timeFrames=[Timeframe(1617981592050, 1617981592080),  Timeframe(1617981582100, 1617981582200),
+                    Timeframe(1617981582210, 1617981582230)],
+        sensorDataPoints=[DataPointsPerSensor(
+            sensorName="Accelerometer",
+            dataPoints=[
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582100),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582117),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582133),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582150),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582167),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582183),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582200),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582217)
+            ]
+        ), DataPointsPerSensor(
+            sensorName="Gyroscope",
+            dataPoints=[
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582100),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582120),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582140),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582160),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582180),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582200)
+            ]
+        )]
+    )]
+
+sensors={"Accelerometer": Sensor(sampling_rate=60, components=["x_Accelerometer", "y_Accelerometer", "z_Accelerometer"]),
+                 "Gyroscope": Sensor(sampling_rate=50, components=["x_Gyroscope", "y_Gyroscope", "z_Gyroscope"])}
+
+parse_samples_from_workspace(samples, sensors)
