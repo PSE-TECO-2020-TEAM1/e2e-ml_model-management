@@ -11,7 +11,8 @@ import bisect
 def validate_sensor_data_points_in_predict(sample: SampleInPredict, workspace_sensors: Dict[str, Sensor]):
     if sample.start > sample.end:
         raise ValueError("Sample start cannot be bigger than the sample end")
-    sensor_data_point_dict = {sensor_data_points.sensor: sensor_data_points.dataPoints for sensor_data_points in sample.sensorDataPoints}
+    sensor_data_point_dict = {
+        sensor_data_points.sensor: sensor_data_points.dataPoints for sensor_data_points in sample.sensorDataPoints}
     for sensor in workspace_sensors:
         if sensor not in sensor_data_point_dict:
             raise ValueError("Data from sensor not present in the sample: " + sensor)
@@ -34,7 +35,7 @@ def parse_samples_from_workspace(samples: List[SampleFromWorkspace], workspace_s
     # We don't validate here since the data is from an internal service (which I hope does data validation)
     all_interpolated_samples = []
     for sample in samples:
-        all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
+        # all_interpolated_samples += parse_sample_from_workspace(sample, workspace_sensors)
         # As negative data, also save the data points out of the selected time frames
         sample.label = LABEL_OUTSIDE_OF_TIMEFRAMES
         invert_timeframes(sample)
@@ -87,8 +88,8 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
         data_in_timeframe = {}  # Sensor name -> Data points in this timeframe
         for j in range(len(sample.sensorDataPoints)):
             sensor_name = sample.sensorDataPoints[j].sensorName
-            left = bisect.bisect_right(sensor_timestamps[sensor_name], timeframe.start)
-            right = bisect.bisect_right(sensor_timestamps[sensor_name], timeframe.end)
+            left = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.start)
+            right = bisect.bisect_left(sensor_timestamps[sensor_name], timeframe.end)
             data_in_timeframe[sensor_name] = sample.sensorDataPoints[j].dataPoints[left:right]
         data_by_timeframe[timeframe] = data_in_timeframe
     return data_by_timeframe
@@ -100,7 +101,7 @@ def delta_of_sensors(sensors: List[Sensor]) -> int:
     for sensor in sensors:
         if sensor.sampling_rate > max:
             max = sensor.sampling_rate
-    return 1000 // max
+    return (1000 // max) + 1
 
 
 def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sensors: Dict[str, Sensor]) -> DataFrame:
@@ -119,10 +120,14 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
 
 
 def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
-    target_len = (timeframe.end - timeframe.start) // delta + 1
+    target_len = (timeframe.end - timeframe.start) // delta
+    # print(target_len)
 
     # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
     if not data_points:
+        print('yey')
+        x = [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
+        print(x)
         return [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
 
     # If start and end timestamps of sample are not aligned with the given timeframe, add a default data point to the start and end of the sample.
@@ -131,10 +136,12 @@ def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], se
     data_points.insert(0, DataPoint(data=data_points[0].data, timestamp=timeframe.start))
     data_points.append(DataPoint(data=data_points[-1].data, timestamp=timeframe.end))
 
+    print(data_points)
     # Normalize the timestamps by removing the offset from each
     for datapoint in data_points:
         datapoint.timestamp -= timeframe.start
 
+    print(timeframe)
     result = []
     hi = 0
     for i in range(target_len):

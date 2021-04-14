@@ -8,7 +8,7 @@ def get_sample_from_workspace_stub_1():
         label="Shake",
         start=1617981582100,
         end=1617981582200,
-        timeFrames=[Timeframe(1617981582100, 161798158200)],
+        timeFrames=[Timeframe(1617981582100, 1617981582200)],
         sensorDataPoints=[DataPointsPerSensor(
             sensorName="Accelerometer",
             dataPoints=[
@@ -38,9 +38,10 @@ def get_sample_from_workspace_stub_1():
 def get_sample_from_workspace_stub_2():
     return SampleFromWorkspace(
         label="Rotate",
-        start=1617981592050,
-        end=1617981592250,
-        timeFrames=[Timeframe(1617981592070, 161798159120), Timeframe(1617981592160, 161798159220)],
+        start=1617981582010,
+        end=1617981582260,
+        timeFrames=[Timeframe(1617981582050, 1617981582080),  Timeframe(1617981582100, 1617981582200),
+                    Timeframe(1617981582210, 1617981582230)],
         sensorDataPoints=[DataPointsPerSensor(
             sensorName="Accelerometer",
             dataPoints=[
@@ -51,13 +52,13 @@ def get_sample_from_workspace_stub_2():
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582167),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582183),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582200),
-
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582217)
             ]
         ), DataPointsPerSensor(
             sensorName="Gyroscope",
             dataPoints=[
-                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582120),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582100),
+                DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582120),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582140),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582160),
                 DataPoint(data=[1.0, 1.0, 1.0], timestamp=1617981582180),
