@@ -43,17 +43,19 @@ def get_data_windows_df_5_1():
          "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 1},
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
          "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 1},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
         # sample_stub_2
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
-        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
-        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
-        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
-        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 2},
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 3},
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
          "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 3},
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
@@ -63,45 +65,63 @@ def get_data_windows_df_5_1():
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
          "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 3},
         {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
-         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 3}
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 4},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 4},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 4},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 4},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 4},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 5},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 5},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 5},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 5},
+        {"x_Accelerometer": 1.0, "y_Accelerometer": 1.0, "z_Accelerometer": 1.0,
+         "x_Gyroscope": 1.0, "y_Gyroscope": 1.0, "z_Gyroscope": 1.0, "id": 5}
     ])
 
 
 def get_labels_of_data_windows_5_1():
-    return ["Shake", "Shake", "Rotate", "Rotate"]
+    return ["Shake", "Shake", "Shake", "Rotate", "Rotate", "Rotate"]
 
 
 def get_sensor_component_feature_dfs_5_1():
     return {
         "x_Accelerometer": {
-            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}, {"x_Accelerometer__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {
-                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
+                "x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}, {"x_Accelerometer__maximum": 1.0}])
         },
         "y_Accelerometer": {
-            Feature.MINIMUM: DataFrame([{"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}, {"y_Accelerometer__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}, {
-                "y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}])
+                "y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}, {"y_Accelerometer__maximum": 1.0}])
         },
         "z_Accelerometer": {
-            Feature.MINIMUM: DataFrame([{"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}, {"z_Accelerometer__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}, {
-                "z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}])
+                "z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}, {"z_Accelerometer__maximum": 1.0}])
         },
         "x_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}, {"x_Gyroscope__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}, {
-                "x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}])
+                "x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}, {"x_Gyroscope__maximum": 1.0}])
         },
         "y_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}, {"y_Gyroscope__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}, {
-                "y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}])
+                "y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}, {"y_Gyroscope__maximum": 1.0}])
         },
         "z_Gyroscope": {
-            Feature.MINIMUM: DataFrame([{"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}]),
+            Feature.MINIMUM: DataFrame([{"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}, {"z_Gyroscope__minimum": 1.0}]),
             Feature.MAXIMUM: DataFrame([{"z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}, {
-                "z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}])
+                "z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}, {"z_Gyroscope__maximum": 1.0}])
         }
     }
 

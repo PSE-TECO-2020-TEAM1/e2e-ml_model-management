@@ -94,13 +94,13 @@ def split_data_by_timeframe(sample: SampleFromWorkspace) -> Dict[Timeframe, Dict
     return data_by_timeframe
 
 
-def delta_of_sensors(sensors: List[Sensor]) -> float:
+def delta_of_sensors(sensors: List[Sensor]) -> int:
     # Interpolate data points from each sensor so that they all match the max.
     max: int = -1
     for sensor in sensors:
         if sensor.sampling_rate > max:
             max = sensor.sampling_rate
-    return 1000 / max
+    return 1000 // max
 
 
 def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sensors: Dict[str, Sensor]) -> DataFrame:
@@ -119,7 +119,7 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
 
 
 def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
-    target_len = int((timeframe.end - timeframe.start) // delta)
+    target_len = (timeframe.end - timeframe.start) // delta + 1
 
     # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
     if not data_points:
