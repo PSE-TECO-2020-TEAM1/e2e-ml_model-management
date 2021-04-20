@@ -121,13 +121,10 @@ def build_dataframe(data_frame_data: Dict[str, List[List[float]]], workspace_sen
 
 def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], sensor: Sensor, timeframe: Timeframe, delta: float) -> List[List[float]]:
     target_len = (timeframe.end - timeframe.start) // delta
-    # print(target_len)
 
     # If there are no datapoints in the selected timeframe, we decided to give default values for that timeframe. (default: 0)
     if not data_points:
-        print('yey')
         x = [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
-        print(x)
         return [[0 for __range__ in range(len(sensor.components))] for __range__ in range(target_len)]
 
     # If start and end timestamps of sample are not aligned with the given timeframe, add a default data point to the start and end of the sample.
@@ -136,12 +133,10 @@ def interpolate_sensor_data_points_in_timeframe(data_points: List[DataPoint], se
     data_points.insert(0, DataPoint(data=data_points[0].data, timestamp=timeframe.start))
     data_points.append(DataPoint(data=data_points[-1].data, timestamp=timeframe.end))
 
-    print(data_points)
     # Normalize the timestamps by removing the offset from each
     for datapoint in data_points:
         datapoint.timestamp -= timeframe.start
 
-    print(timeframe)
     result = []
     hi = 0
     for i in range(target_len):
